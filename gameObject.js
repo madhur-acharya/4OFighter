@@ -4,7 +4,7 @@ const GameObject= (function ()
 
 	class GameObject 
 	{
-		constructor(positionVector= new Vector(0, 0), gravityActive= false, frictionActive= false) 
+		constructor(list= [], positionVector= new Vector(0, 0), gravityActive= false, frictionActive= false) 
 		{
 			privateProps.set(this, {
 				position: positionVector,
@@ -24,6 +24,8 @@ const GameObject= (function ()
 
 			this.executables= ["applyGravity", "applyAcceleration", "applyVelocity", "applyFriction"];
 			this.timers= {}
+			this.renderList= list;
+			list.push(this);
 		}
 
 		getProp(prop)
@@ -75,15 +77,6 @@ const GameObject= (function ()
 			});
 		}
 
-		static createNew(list)
-		{
-			if(!list) return;
-			const obj= new GameObject();
-			obj.renderList= list;
-			list.push(obj);
-			return obj;
-		}
-
 		applyVelocity()
 		{
 			let pos= this.getProp("position");
@@ -133,11 +126,11 @@ const GameObject= (function ()
 				
 			});
 			if(this.drawGizmos) this.renderGizmos();
-			this.renderObject(this);
+			this.renderer(this);
 			this.collisionDetection();
 		}
 
-		renderObject()
+		renderer()
 		{
 			draw_vector(this.position);
 		}
@@ -185,7 +178,8 @@ const GameObject= (function ()
 		addCollider(colliderObj= {
 			type: "circle",
 			radius: 15,
-			onCollision: () => {}
+			onCollision: () => {},
+			uncolide: false
 		})
 		{
 			this.collider= colliderObj;
@@ -202,8 +196,12 @@ const GameObject= (function ()
 					{
 						if(Circle2CircleCollision(this, this.renderList[i]))
 						{
+							if(this.collider.uncolide && this.renderList[i].collider.uncolide) 
+							{
+								uncolide(this, this.renderList[i] && this.renderList[i]);
+							}
 							this.collider.onCollision(this, this.renderList[i]);
-							this.renderList[i].collider.onCollision(this, this.renderList[i]);
+							this.renderList[i] && this.renderList[i].collider.onCollision(this.renderList[i], this);
 						}
 					}
 				}
@@ -219,5 +217,51 @@ const GameObject= (function ()
 	return GameObject;
 })();
 
+class Asteroid extends GameObject{
+	constructor(list= [], position= new Vector(0, 0), vertices= 20, collider= {
+		type: "circle",
+		radius: 50,
+		onCollision: () => {},
+		uncolide: true
+	})
+	{
+		super(list, position);
+		super.collider= collider;
+		super.renderList= list;
+		this.vertexArray= [];
+		this.vertices= vertices;
+		this.health= 3;
+
+		let slice= (Math.PI * 2) / this.vertices, 
+			angle= 0;
+		for(let i= 0; i < this.vertices; i++)
+		{
+			let vx= Math.cos(angle) * (this.collider.radius - Math.random() * this.collider.radius / 3);
+			let vy= Math.sin(angle) * (this.collider.radius - Math.random() * this.collider.radius / 3);	
+			let vertex= new Point(vx, vy);
+
+			this.vertexArray.push(vertex);
+			angle= angle + slice;
+		};
+
+		super.renderer= () => {
+			context.save();
+			context.translate(this.position.x, this.position.y);
+			context.rotate(this.velocity.getAngle());
+			context.beginPath();
+			context.strokeStyle= "white";
+			context.fillStyle= "#232322";
+			context.moveTo(this.vertexArray[0].x, this.vertexArray[0].y);
+			for(let i= 1; i < this.vertexArray.length; i++)
+			{
+				context.lineTo(this.vertexArray[i].x, this.vertexArray[i].y);
+			}
+			context.lineTo(this.vertexArray[0].x, this.vertexArray[0].y);
+			context.stroke();
+			context.fill();
+			context.restore();
+		};
+	}
+}
 
 

@@ -62,41 +62,30 @@ const getNewFrame= () => {
 
 const Start= () => {
 	clearCanvas();
-	
-	/*for(i= 0; i < 1; i++)
-	{
-		const obj= GameObject.createNew(gameObjectList);
-		//obj.velocity= getRandomVector(5, 5);
-		obj.velocity= new Vector(1, 0);
-		obj.executables.push(() => {
-			obj.position= obj.position.add(new Vector(0, 2));
-		});
-		obj.executables.push(() => {
-			wrappAround(obj);
-		});
-		obj.addCollider();
-	}*/
 
-	const enemy= GameObject.createNew(gameObjectList);
+	const enemy= new GameObject(gameObjectList);
 	enemy.alias= "enemy";
 	enemy.layer= "projectile";
-	enemy.position= new Vector(0, height / 3);
-	enemy.renderObject= circleRenderer(enemy, "white", 50);
+	//enemy.drawGizmos= true;
+	enemy.position= new Vector(0, 200);
+	enemy.renderer= drawBoss1;
 	enemy.addCollider({
 		type: "circle",
-		radius: 50,
+		radius: 80,
 		onCollision: (current, other) => {
-			enemy.renderObject= circleRenderer(enemy, "grey", 50);
+			enemy.renderer= obj => drawBoss1(obj, true);
 			timeOut.newTimeOut(() => {
-				enemy.renderObject= circleRenderer(enemy, "white", 50);
+				enemy.renderer= drawBoss1;
 			}, 20)
 		}
 	});
 
-	const player= GameObject.createNew(gameObjectList);
+	const player= new GameObject(gameObjectList);
 	player.alias= "player";
+	player.health= 5;
+	player.layer= "projectile";
 	player.position= new Vector(0, -height / 3);
-	player.renderObject= drawSpaceship;
+	player.renderer= drawSpaceship;
 	player.executables.unshift(playerMovementSnappy);
 	player.addTimer("firerate", new timer());
 	player.firerate= 150;
@@ -105,9 +94,40 @@ const Start= () => {
 		type: "circle",
 		radius: 15,
 		onCollision: (current, other) => {
-			console.log(other.objectId);
+			if(other.alias == "asteroid")
+			{
+				current.health-= 1;
+				if(current.health <= 0)
+				{
+					current.destroy();
+				}
+			}
 		}
 	});
+
+	for(let i= 0; i < 5; i++)
+	{
+		const ast= new Asteroid(gameObjectList, getRandomVector());
+		ast.velocity= new Vector(0, -2);
+		ast.alias= "asteroid";
+		ast.layer= "projectile";
+		ast.addCollider({
+			type: "circle",
+			radius: 50,
+			uncolide: true,
+			onCollision: (current, other) => {
+				if(other.alias == "bullet")
+				{
+					current.health-= 1;
+					if(current.health <= 0)
+					{
+						current.destroy();
+					}
+				}
+			}
+		});
+		ast.destroy(10000);
+	}
 
 	getNewFrame();
 };

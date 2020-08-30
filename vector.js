@@ -64,4 +64,11 @@ class Vector{
 Math.Rad2Deg= (180 / Math.PI);
 Math.Deg2rad= (Math.PI / 180);
 
-
+class Point
+{
+	constructor(x, y)
+	{
+		this.x= x;
+		this.y= y;
+	}
+}

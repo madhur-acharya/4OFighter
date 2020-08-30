@@ -3,6 +3,7 @@ framerateTag= document.getElementById("framerate");
 nurdyStats= document.getElementById("nurdy_stats");
 nurdyStats2= document.getElementById("nurdy_stats2");
 nurdyStats3= document.getElementById("nurdy_stats3");
+boss1Sprite= document.getElementById("boss1");
 window.onerror= err => console.log(err);
 
 var isPaused= false,

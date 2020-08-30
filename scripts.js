@@ -27,6 +27,19 @@ function drawSpaceship(gameObject)
 	context.restore();
 };
 
+function drawBoss1(gameObject, damaged= false)
+{
+	context.save();
+	context.translate(gameObject.position.x, gameObject.position.y);
+	if(Math.round(seconds) % 2 == true)
+	{
+		context.rotate(Math.PI / 2);
+	}
+	context.drawImage(boss1Sprite, -(boss1Sprite.naturalWidth / 2), -(boss1Sprite.naturalHeight / 2), (boss1Sprite.naturalWidth * (damaged ? 0.99 : 1)), (boss1Sprite.naturalHeight * (damaged ? 0.99 : 1)));
+	context.restore();
+};
+
+
 function playerMovementSnappy(player)
 {
 	if(inputSystem.up === true)
@@ -82,13 +95,13 @@ function playerMovementSnappy(player)
 			{
 				player.timers.firerate.reset();
 
-				const bullet= GameObject.createNew(gameObjectList);
-				bullet.position= player.position;
+				const bullet= new GameObject(gameObjectList);
+				bullet.position= new Vector(player.position.x, player.position.y + 30);
 				bullet.drawGizmos= true;
 				bullet.velocity= new Vector(0, 10);
-				bullet.alias= "bullet" + gameObjectList.length;
+				bullet.alias= "bullet";
 				bullet.layer= "projectile";
-				bullet.renderObject= obj => {
+				bullet.renderer= obj => {
 					context.save();
 					context.beginPath();
 					context.fillStyle= "orange";
@@ -100,7 +113,8 @@ function playerMovementSnappy(player)
 					radius: 5,
 					onCollision: (current, other) => {
 						current.destroy();
-					}
+					},
+					uncolide: true
 				});
 				bullet.destroy(5000);
 			}
@@ -177,12 +191,12 @@ function playerMovementSmooth(player)
 			{
 				player.timers.firerate.reset();
 
-				const bullet= GameObject.createNew(projectiles);
+				const bullet= new GameObject(projectiles);
 				bullet.position= player.position;
 				bullet.drawGizmos= true;
 				bullet.velocity= new Vector(0, 10);
 				bullet.alias= "bullet" + projectiles.length;
-				bullet.renderObject= obj => {
+				bullet.renderer= obj => {
 					context.save();
 					context.beginPath();
 					context.fillStyle= "orange";

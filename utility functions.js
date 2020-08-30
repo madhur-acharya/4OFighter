@@ -166,23 +166,27 @@ function check_p2wall_collision(ref, inprison= false, stick= false)
 //------------------------------------------------------------------------
 function uncolide(pt1, pt2)
 {
-	var nudge= new vector(0, 0);
-	nudge.setMag(1);
-	var tta= Math.atan2(pt1.position.y - pt2.position.y, pt1.position.x - pt2.position.x);
-	//nudge.setAngle(tta);
-	//pt1.position.add(nudge);
-	nudge.setAngle(tta + Math.PI);
-	pt2.position.add(nudge);
+	const watchDog= new realWorldTimer();
+	while(Circle2CircleCollision(pt1, pt2) && watchDog.getDuration() < 5000)
+	{
+		var nudge= new Vector(0, 0);
+		nudge.setMag(1);
+		var tta= Math.atan2(pt1.position.y - pt2.position.y, pt1.position.x - pt2.position.x);
+		//nudge.setAngle(tta);
+		//pt1.position.add(nudge);
+		nudge.setAngle(tta + Math.PI);
+		pt2.position= pt2.position.add(nudge);
+	}
 }
 //------------------------------------------------------------------------
-function unstack_particles(array)
+function unStackObjects(array)
 {
 	for(var e1= 0; e1 < array.length; e1++)
 		for(var e2= e1; e2 < array.length ; e2++)
 		{
 			if(e1 == e2)
 				continue;
-			while(check_b2b_collision(array[e1], array[e2]))
+			while(Circle2CircleCollision(array[e1], array[e2]))
 			{
 				uncolide(array[e1], array[e2]);
 			}
