@@ -64,6 +64,43 @@ class TimeOut{
 window.timeOut= new TimeOut();
 
 //------------------------------------------------------------------------
+
+class Interval{
+
+	constructor()
+	{
+		this.intervalArray= [];
+	}
+
+	newInterval(onInterval= () => {}, duaration, maxIterations= -1)
+	{
+		this.intervalArray.push({
+			timer: new timer(),
+			maxIterations: maxIterations,
+			iterationCount: 0,
+			onInterval: onInterval,
+			duaration: duaration
+		});
+	}
+	update()
+	{
+		for(let i=0; i < this.intervalArray.length; i++)
+		{
+			if(this.intervalArray[i].timer.getDuration() >= this.intervalArray[i].duaration)
+			{
+				const ele= this.intervalArray[i];
+				ele.onInterval();
+				ele.timer.reset();
+				ele.iterationCount+= 1;
+				if(ele.maxIterations !== -1 && ele.iterationCount >= ele.maxIterations)
+					this.intervalArray.splice(i, 1);
+			}
+		}
+	}
+}
+window.interval= new Interval();
+
+//------------------------------------------------------------------------
 function getRandomNumber(min= 0, max= 1) {
   min = Math.ceil(min);
   max = Math.floor(max);

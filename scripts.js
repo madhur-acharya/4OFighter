@@ -39,6 +39,17 @@ function drawBoss1(gameObject, damaged= false)
 	context.restore();
 };
 
+function attack1()
+{
+	let slice= (Math.PI * 2) / 30, 
+	angle= 0;
+	for(let i= 0; i < 30; i++)
+	{
+		let bullet= new particle(ship2.position.dx + (Math.cos(angle) * 30), ship2.position.dy + (Math.sin(angle) * 30), angle, 5, 7);
+			bullet_stack.push(bullet);
+		angle= angle + slice;
+	}
+};
 
 function playerMovementSnappy(player)
 {

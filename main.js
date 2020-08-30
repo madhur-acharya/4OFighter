@@ -133,8 +133,10 @@ const Start= () => {
 };
 
 const Update= () => {
-	timeOut.update();
+	timeOut && timeOut.update();
+	interval && interval.update();
 	clearCanvas();
+	
 	//for(i=0; i< 20000000; i++);
 
 	gameObjectList.forEach((itm, indx) => {
