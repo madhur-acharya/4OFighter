@@ -63,7 +63,7 @@ const getNewFrame= () => {
 const Start= () => {
 	clearCanvas();
 
-	const enemy= new GameObject(gameObjectList);
+	/*const enemy= new GameObject(gameObjectList);
 	enemy.alias= "enemy";
 	enemy.layer= "projectile";
 	//enemy.drawGizmos= true;
@@ -71,32 +71,45 @@ const Start= () => {
 	enemy.renderer= drawBoss1;
 	enemy.addCollider({
 		type: "circle",
-		radius: 80,
+		radius: 50,
 		onCollision: (current, other) => {
 			enemy.renderer= obj => drawBoss1(obj, true);
 			timeOut.newTimeOut(() => {
 				enemy.renderer= drawBoss1;
 			}, 20)
 		}
-	});
+	});*/
+
+	SpawnDuke();
 
 	const player= new GameObject(gameObjectList);
 	player.alias= "player";
-	player.health= 5;
+	player.health= 10;
 	player.layer= "projectile";
 	player.position= new Vector(0, -height / 3);
 	player.renderer= drawSpaceship;
 	player.executables.unshift(playerMovementSnappy);
 	player.addTimer("firerate", new timer());
-	player.firerate= 150;
+	player.firerate= 100;
 	player.drawGizmos= true;
 	player.addCollider({
 		type: "circle",
 		radius: 15,
+		uncolide: true,
 		onCollision: (current, other) => {
-			if(other.alias == "asteroid")
+			if(other.alias === "asteroid" || other.alias === "enemy")
 			{
-				current.health-= 1;
+				if(!current.disableCollisionDetection)
+				{
+					current.health-= 1;
+					console.log("!")
+					other.velocity= new Vector(-other.velocity.x, -other.velocity.y);
+					current.disableCollisionDetection= true;
+					timeOut.newTimeOut(() => {
+						current.disableCollisionDetection= false;
+					}, 100);
+				}
+				
 				if(current.health <= 0)
 				{
 					current.destroy();
@@ -105,7 +118,7 @@ const Start= () => {
 		}
 	});
 
-	for(let i= 0; i < 5; i++)
+	/*for(let i= 0; i < 5; i++)
 	{
 		const ast= new Asteroid(gameObjectList, getRandomVector());
 		ast.velocity= new Vector(0, -2);
@@ -116,18 +129,18 @@ const Start= () => {
 			radius: 50,
 			uncolide: true,
 			onCollision: (current, other) => {
-				if(other.alias == "bullet")
-				{
-					current.health-= 1;
-					if(current.health <= 0)
-					{
-						current.destroy();
-					}
-				}
+				
 			}
 		});
 		ast.destroy(10000);
-	}
+	}*/
+
+	/*let off= 0;
+
+	interval.newInterval(() => {
+		attack1(enemy.position, 10, off);
+		off+= Math.PI / (Math.random() * 5);
+	}, 300, 20);*/
 
 	getNewFrame();
 };

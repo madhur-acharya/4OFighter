@@ -170,35 +170,36 @@ function box2BoxCollision(b1, b2)
 		return false;
 }
 //------------------------------------------------------------------------
-function check_p2wall_collision(ref, inprison= false, stick= false)
+function cirlce2WalllCollision(ref)
 {
 	let size, flag= false;
 
-	let position= new vector(ref.position.x, ref.position.y);
-	size= ref.size; 
+	let position= new Vector(ref.position.x, ref.position.y);
+	let resultantVelocity= new Vector(ref.velocity.x, ref.velocity.y);
+	size= ref.collider.radius; 
 
 	if(ref.position.x >= width / 2 - size || ref.position.x <= -width / 2 + size)
 	{
-		position.x= Math.sign(ref.position.x) * (width / 2) + (Math.sign(ref.position.x) * -1 * (size + 0)); 
+		resultantVelocity.x= -resultantVelocity.x;
+		position.x= (ref.position.x >= width / 2 - size) ? ((width / 2) - (size + 1)) : (-(width / 2) + (size - 1));
+		ref.position= position;
 		flag= true;
 	}
 
 	if(ref.position.y >= height / 2 - size || ref.position.y <= -height / 2 + size)
 	{
-		position.y= Math.sign(ref.position.y) * (height / 2) + (Math.sign(ref.position.y) * -1 * (size + 0));
+		resultantVelocity.y= -resultantVelocity.y;
+		position.y= (ref.position.y >= height / 2 - size) ? ((height / 2) - (size + 1)) : (-(height / 2) + (size - 1));
+		ref.position= position;
 		flag= true;
 	}
 	
 	if(flag === true)
 	{
-		if(inprison === true)
-			ref.position.set_vect(position);
-		if(stick === true)
-			ref.velocity.setMag(0);
-		return position;
+		return resultantVelocity;
 	}
 	else
-		return false; 
+		return ref.velocity; 
 }
 //------------------------------------------------------------------------
 function uncolide(pt1, pt2)
@@ -263,9 +264,10 @@ function circleRenderer(obj, color= "white", radius= 10, fill= true)
 {
 	return () => {
 		context.save();
+		context.translate(obj.position.x, obj.position.y);
 		context.beginPath();
 		context.fillStyle= color;
-		context.arc(obj.position.x, obj.position.y, radius, 0, Math.PI * 2);
+		context.arc(0, 0, radius, 0, Math.PI * 2);
 		if(fill) context.fill();
 		else context.stroke();
 		context.restore();

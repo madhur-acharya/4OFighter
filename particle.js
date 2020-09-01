@@ -4,27 +4,27 @@ var point= function(a, b)
 	this.y= b;
 }
 
-var particle= function(x, y, direction, speed, sz)
+const Particle= function(x, y, direction, speed, sz)
 {
 	this.size= sz;
 	this.position= new vector(x, y);
 	this.velocity= new vector(0, 0);
-	this.velocity.set_mag(speed);
-	this.velocity.set_angle(direction);
+	this.velocity.setMag(speed);
+	this.velocity.setAngle(direction);
 
 	this.update_pos= function()
 	{
 		var temp= new vector(0, 0);
 
-		if(delta == 0 || delta == undefined || delta == null)
+		if(!deltaTime)
 		{
-			this.position.add(this.velocity);
+			this.position= this.position.add(this.velocity);
 		}
 		else
 		{
-			temp.set_mag(this.velocity.get_mag() * (60 / delta));
-			temp.set_angle(this.velocity.get_angle());
-			this.position.add(temp);
+			temp.setMag(this.velocity.getMag() * (60 / deltaTime));
+			temp.setAngle(this.velocity.getAngle());
+			this.position= this.position.add(temp);
 		}
 	}
 }
@@ -38,10 +38,10 @@ var spaceShip= function(x, y, direction, speed, xlr8= 0, friction= 0, sz)
 
 	this.position= new vector(x, y);
 	this.velocity= new vector(0, 0);
-	this.velocity.set_mag(speed);
-	this.velocity.set_angle(direction);
+	this.velocity.setMag(speed);
+	this.velocity.setAngle(direction);
 	this.acceleration= new vector(0, 0);
-	this.acceleration.set_mag(xlr8);
+	this.acceleration.setMag(xlr8);
 
 	this.update_pos= function()
 	{
@@ -49,21 +49,21 @@ var spaceShip= function(x, y, direction, speed, xlr8= 0, friction= 0, sz)
 
 		if(delta == 0 || delta == undefined || delta == null)
 		{
-			this.position.add(this.velocity);
+			this.position= this.position.add(this.velocity);
 		}
 		else
 		{
-			temp.set_mag(this.velocity.get_mag() * (60 / delta));
-			temp.set_angle(this.velocity.get_angle());
-			this.position.add(temp);
+			temp.setMag(this.velocity.getMag() * (60 / delta));
+			temp.setAngle(this.velocity.getAngle());
+			this.position= this.position.add(temp);
 		}
 	}
 
 	this.accelerate= function(decelerate= false)
 	{
 		this.velocity.add(this.acceleration);
-		if(this.velocity.get_mag() > this.topspeed)
-			this.velocity.set_mag(this.topspeed);
+		if(this.velocity.getMag() > this.topspeed)
+			this.velocity.setMag(this.topspeed);
 	}
 
 	this.apply_friction= function()
@@ -79,8 +79,8 @@ var asteroid= function(x, y, direction, speed, sz= 20, v)
 	this.vertices= v;
 	this.position= new vector(x, y);
 	this.velocity= new vector(0, 0);
-	this.velocity.set_mag(speed);
-	this.velocity.set_angle(direction);
+	this.velocity.setMag(speed);
+	this.velocity.setAngle(direction);
 
 	let slice= (Math.PI * 2) / this.vertices, 
 		angle= 0;
@@ -100,13 +100,13 @@ var asteroid= function(x, y, direction, speed, sz= 20, v)
 
 		if(delta == 0 || delta == undefined || delta == null)
 		{
-			this.position.add(this.velocity);
+			this.position= this.position.add(this.velocity);
 		}
 		else
 		{
-			temp.set_mag(this.velocity.get_mag() * (60 / delta));
-			temp.set_angle(this.velocity.get_angle());
-			this.position.add(temp);
+			temp.setMag(this.velocity.getMag() * (60 / delta));
+			temp.setAngle(this.velocity.getAngle());
+			this.position= this.position.add(temp);
 		}
 	}
 }

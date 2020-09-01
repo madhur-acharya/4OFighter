@@ -4,7 +4,7 @@ const GameObject= (function ()
 
 	class GameObject 
 	{
-		constructor(list= [], positionVector= new Vector(0, 0), gravityActive= false, frictionActive= false) 
+		constructor(list= [], positionVector= new Vector(0, 0), velocity= new Vector(0, 0), gravityActive= false, frictionActive= false) 
 		{
 			privateProps.set(this, {
 				position: positionVector,
@@ -14,13 +14,14 @@ const GameObject= (function ()
 			this.gravityActive= gravityActive;
 			this.gravity= new Vector(0, -0.1);
 			this.velocityCap= 50;
-			this.velocity= new Vector(0, 0);
+			this.velocity= velocity;
 			this.frictionActive= frictionActive;
 			this.frictionCoefficient= 1;
 			this.objectId= performance.now().toString();
 			this.drawGizmos= false;
 			this.acceleration= new Vector(0, 0);
 			this.layer= "default";
+			this.disableCollisionDetection= false;
 
 			this.executables= ["applyGravity", "applyAcceleration", "applyVelocity", "applyFriction"];
 			this.timers= {}
@@ -175,33 +176,45 @@ const GameObject= (function ()
 			}
 		}
 
-		addCollider(colliderObj= {
-			type: "circle",
-			radius: 15,
-			onCollision: () => {},
-			uncolide: false
-		})
+		addCollider(colliderObj)
 		{
-			this.collider= colliderObj;
+			this.collider= {
+				type: "circle",
+				radius: 15,
+				onCollision: () => {},
+				uncolide: false,
+				computeBoundryCollision: false,
+				...colliderObj
+			};
 		}
 
 		collisionDetection()
 		{
 			if(!this.collider) return;
 			else
-			{
-				for(let i= 0; i < this.renderList.length; i++)
+			{	
+				if(this.collider.computeBoundryCollision)
 				{
-					if(this.objectId !== this.renderList[i].objectId && this.layer === this.renderList[i].layer)
+					this.velocity= cirlce2WalllCollision(this);
+				}
+
+				if(this.disableCollisionDetection) return;
+				else
+				{
+					for(let i= 0; i < this.renderList.length; i++)
 					{
-						if(Circle2CircleCollision(this, this.renderList[i]))
+						if(this.objectId !== this.renderList[i].objectId && this.layer === this.renderList[i].layer)
 						{
-							if(this.collider.uncolide && this.renderList[i].collider.uncolide) 
+							if(this.renderList[i].disableCollisionDetection) return;
+							if(Circle2CircleCollision(this, this.renderList[i]))
 							{
-								uncolide(this, this.renderList[i] && this.renderList[i]);
+								if(this.collider.uncolide && this.renderList[i].collider.uncolide) 
+								{
+									uncolide(this, this.renderList[i] && this.renderList[i]);
+								}
+								this.collider.onCollision(this, this.renderList[i]);
+								this.renderList[i] && this.renderList[i].collider.onCollision(this.renderList[i], this);
 							}
-							this.collider.onCollision(this, this.renderList[i]);
-							this.renderList[i] && this.renderList[i].collider.onCollision(this.renderList[i], this);
 						}
 					}
 				}
@@ -218,7 +231,7 @@ const GameObject= (function ()
 })();
 
 class Asteroid extends GameObject{
-	constructor(list= [], position= new Vector(0, 0), vertices= 20, collider= {
+	constructor(list= [], position= new Vector(0, 0), vertices= 30, collider= {
 		type: "circle",
 		radius: 50,
 		onCollision: () => {},
@@ -244,6 +257,21 @@ class Asteroid extends GameObject{
 			angle= angle + slice;
 		};
 
+		super.addCollider= obj => {
+			super.collider= obj;
+			let slice= (Math.PI * 2) / this.vertices, 
+				angle= 0;
+			for(let i= 0; i < this.vertices; i++)
+			{
+				let vx= Math.cos(angle) * (this.collider.radius - Math.random() * this.collider.radius / 3);
+				let vy= Math.sin(angle) * (this.collider.radius - Math.random() * this.collider.radius / 3);	
+				let vertex= new Point(vx, vy);
+
+				this.vertexArray.push(vertex);
+				angle= angle + slice;
+			};
+		};
+
 		super.renderer= () => {
 			context.save();
 			context.translate(this.position.x, this.position.y);
@@ -265,3 +293,39 @@ class Asteroid extends GameObject{
 }
 
 
+class Projectile extends GameObject{
+	constructor(list= [], position= new Vector(0, 0), speed= 10, direction= Math.PI / 2, size= 5)
+	{
+		const vel= new Vector(0, 0);
+		vel.setMag(speed);
+		vel.setAngle(direction);
+
+		super(list, position);
+		super.velocity= vel;
+		super.alias= "projectile";
+		super.layer= "projectile";
+		super.renderer= obj => {
+			context.save();
+			context.beginPath();
+			context.fillStyle= "orange";
+			context.arc(obj.position.x, obj.position.y, size, 0, Math.PI * 2);
+			context.fill();
+		}
+		super.addCollider({
+			type: "circle",
+			radius: size,
+			onCollision: (current, other) => {
+				if(other.alias === "asteroid" || other.alias === "enemy")
+				{
+					current.destroy();
+				}
+				else if(other.alias !== current.alias)
+				{
+					current.destroy();
+				}
+			},
+			uncolide: false
+		});
+		super.destroy(5000);
+	}
+}

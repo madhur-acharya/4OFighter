@@ -31,22 +31,64 @@ function drawBoss1(gameObject, damaged= false)
 {
 	context.save();
 	context.translate(gameObject.position.x, gameObject.position.y);
-	if(Math.round(seconds) % 2 == true)
-	{
-		context.rotate(Math.PI / 2);
-	}
-	context.drawImage(boss1Sprite, -(boss1Sprite.naturalWidth / 2), -(boss1Sprite.naturalHeight / 2), (boss1Sprite.naturalWidth * (damaged ? 0.99 : 1)), (boss1Sprite.naturalHeight * (damaged ? 0.99 : 1)));
+	context.beginPath();
+	context.fillStyle= damaged ? "crimson" : "red";
+	context.arc(0, 0, gameObject.collider.radius, 0, Math.PI * 2);
+	context.fill();
 	context.restore();
 };
 
-function attack1()
+function SpawnDuke()
 {
-	let slice= (Math.PI * 2) / 30, 
-	angle= 0;
-	for(let i= 0; i < 30; i++)
+	let dukeCount= 0;
+
+	const dukeSpawner= (positon= new Vector(0, 0), number= 1, size= 100, health= 10, vertices= 50) => {
+		for(let i= 0; i < number; i++)
+		{
+			dukeCount++;
+
+			const duke= new Asteroid(gameObjectList, positon, vertices);
+			duke.velocity= getRandomVector(5, 5);
+			duke.alias= "asteroid";
+			duke.layer= "projectile";
+			duke.health= health;
+			//duke.drawGizmos= true;
+			duke.addCollider({
+				type: "circle",
+				radius: size,
+				uncolide: true,
+				computeBoundryCollision: true,
+				onCollision: (current, other) => {
+					if(other.alias === "projectile")
+					{
+						duke.health-= 1;
+						if(duke.health <= 0)
+						{
+							if(size > 20)
+							{
+								dukeSpawner(current.position, 2, size - 20, health / 2);
+							}
+							dukeCount--;
+							if(dukeCount <= 0)
+								window.alert("Yey!");
+							current.destroy();
+						}
+					}
+				}
+			});
+		}
+	};
+
+	dukeSpawner();
+};
+
+function attack1(position= new Vector(0, 0), numberOfProjectiles= 10, offset= 0)
+{
+	let slice= (Math.PI * 2) / numberOfProjectiles, 
+	angle= offset;
+	for(let i= 0; i <= numberOfProjectiles; i++)
 	{
-		let bullet= new particle(ship2.position.dx + (Math.cos(angle) * 30), ship2.position.dy + (Math.sin(angle) * 30), angle, 5, 7);
-			bullet_stack.push(bullet);
+		new Projectile(gameObjectList, position, 7, angle, 20);
 		angle= angle + slice;
 	}
 };
@@ -106,28 +148,7 @@ function playerMovementSnappy(player)
 			{
 				player.timers.firerate.reset();
 
-				const bullet= new GameObject(gameObjectList);
-				bullet.position= new Vector(player.position.x, player.position.y + 30);
-				bullet.drawGizmos= true;
-				bullet.velocity= new Vector(0, 10);
-				bullet.alias= "bullet";
-				bullet.layer= "projectile";
-				bullet.renderer= obj => {
-					context.save();
-					context.beginPath();
-					context.fillStyle= "orange";
-					context.arc(obj.position.x, obj.position.y, 5, 0, Math.PI * 2);
-					context.fill();
-				}
-				bullet.addCollider({
-					type: "circle",
-					radius: 5,
-					onCollision: (current, other) => {
-						current.destroy();
-					},
-					uncolide: true
-				});
-				bullet.destroy(5000);
+				new Projectile(gameObjectList, new Vector(player.position.x, player.position.y + 30));
 			}
 		}
 	}
@@ -206,7 +227,7 @@ function playerMovementSmooth(player)
 				bullet.position= player.position;
 				bullet.drawGizmos= true;
 				bullet.velocity= new Vector(0, 10);
-				bullet.alias= "bullet" + projectiles.length;
+				bullet.alias= "projectile";
 				bullet.renderer= obj => {
 					context.save();
 					context.beginPath();
