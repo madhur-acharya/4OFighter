@@ -9,6 +9,10 @@ class Input{
 		this.enter= false;
 		this.space= false;
 		this.mute= false;
+		this.w= false;
+		this.a= false;
+		this.s= false;
+		this.d= false;
 
 		this.initialize();
 	}
@@ -25,6 +29,10 @@ class Input{
 				case 39 : {this.right= true; break;} 
 				case 32 : {this.space= true; break;}
 				case 13 : {this.enter= true; break;}
+				case 87 : {this.w= true; break;}
+				case 65 : {this.a= true; break;}
+				case 83 : {this.s= true; break;}
+				case 68 : {this.d= true; break;}
 			}
 		});
 
@@ -38,6 +46,10 @@ class Input{
 				case 39 : {this.right= false; break;} 
 				case 32 : {this.space= false; break;}
 				case 13 : {this.enter= false; break;}
+				case 87 : {this.w= false; break;}
+				case 65 : {this.a= false; break;}
+				case 83 : {this.s= false; break;}
+				case 68 : {this.d= false; break;}
 			}
 		});
 	}

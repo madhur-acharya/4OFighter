@@ -43,12 +43,22 @@ class TimeOut{
 
 	newTimeOut(onTimeOut= () => {}, delay= 0)
 	{
+		const timeOutId= performance.now().toString();
 		this.timeOutArray.push({
 			timer: new timer(),
 			delay: delay,
-			onTimeOut: onTimeOut
+			onTimeOut: onTimeOut,
+			timeOutId: timeOutId
 		});
+
+		return timeOutId;
 	}
+
+	clearTimeOut(id)
+	{
+		this.timeOutArray= this.timeOutArray.filter(itm => !itm.timeOutId === id);
+	}
+
 	update()
 	{
 		for(let i=0; i < this.timeOutArray.length; i++)
@@ -74,14 +84,23 @@ class Interval{
 
 	newInterval(onInterval= () => {}, duaration, maxIterations= -1)
 	{
+		const intervalId= performance.now().toString();
 		this.intervalArray.push({
 			timer: new timer(),
 			maxIterations: maxIterations,
 			iterationCount: 0,
 			onInterval: onInterval,
-			duaration: duaration
+			duaration: duaration,
+			intervalId: performance.now().toString()
 		});
+		return intervalId;
 	}
+
+	clearInterval(id)
+	{
+		this.intervalArray= this.intervalArray.filter(itm => !itm.intervalId === id);
+	}
+
 	update()
 	{
 		for(let i=0; i < this.intervalArray.length; i++)
@@ -124,7 +143,7 @@ function getRandomColor()
 		return color;
 }
 //------------------------------------------------------------------------
-function draw_vector(pos, vel= pos, color= "red")
+function drawVector(pos, vel= pos, color= "red")
 {
 	context.save();
 	context.beginPath();
@@ -273,4 +292,8 @@ function circleRenderer(obj, color= "white", radius= 10, fill= true)
 		context.restore();
 	};
 };
+
+//------------------------------------------------------------------------
+
+
 

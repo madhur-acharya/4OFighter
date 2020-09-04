@@ -60,89 +60,37 @@ const getNewFrame= () => {
 	}
 };
 
-const Start= () => {
-	clearCanvas();
-
-	/*const enemy= new GameObject(gameObjectList);
-	enemy.alias= "enemy";
-	enemy.layer= "projectile";
-	//enemy.drawGizmos= true;
-	enemy.position= new Vector(0, 200);
-	enemy.renderer= drawBoss1;
-	enemy.addCollider({
-		type: "circle",
-		radius: 50,
-		onCollision: (current, other) => {
-			enemy.renderer= obj => drawBoss1(obj, true);
-			timeOut.newTimeOut(() => {
-				enemy.renderer= drawBoss1;
-			}, 20)
-		}
-	});*/
-
-	SpawnDuke();
-
-	const player= new GameObject(gameObjectList);
-	player.alias= "player";
-	player.health= 10;
-	player.layer= "projectile";
-	player.position= new Vector(0, -height / 3);
-	player.renderer= drawSpaceship;
-	player.executables.unshift(playerMovementSnappy);
-	player.addTimer("firerate", new timer());
-	player.firerate= 100;
-	player.drawGizmos= true;
-	player.addCollider({
-		type: "circle",
-		radius: 15,
-		uncolide: true,
-		onCollision: (current, other) => {
-			if(other.alias === "asteroid" || other.alias === "enemy")
-			{
-				if(!current.disableCollisionDetection)
-				{
-					current.health-= 1;
-					console.log("!")
-					other.velocity= new Vector(-other.velocity.x, -other.velocity.y);
-					current.disableCollisionDetection= true;
-					timeOut.newTimeOut(() => {
-						current.disableCollisionDetection= false;
-					}, 100);
-				}
-				
-				if(current.health <= 0)
-				{
-					current.destroy();
-				}
-			}
-		}
+const setupEvents= () => {
+	window.addEventListener("onBossDeath", () => {
+		eventSystem.dispatchEvent("onLevelComplete");
 	});
 
-	/*for(let i= 0; i < 5; i++)
-	{
-		const ast= new Asteroid(gameObjectList, getRandomVector());
-		ast.velocity= new Vector(0, -2);
-		ast.alias= "asteroid";
-		ast.layer= "projectile";
-		ast.addCollider({
-			type: "circle",
-			radius: 50,
-			uncolide: true,
-			onCollision: (current, other) => {
-				
-			}
-		});
-		ast.destroy(10000);
-	}*/
+	window.addEventListener("onLevelComplete", () => {
+		timeOut.newTimeOut(spawnExit, 1000);
+	});
 
-	/*let off= 0;
+	window.addEventListener("onStartNextLevel", () => drawRouteIntro());
 
-	interval.newInterval(() => {
-		attack1(enemy.position, 10, off);
-		off+= Math.PI / (Math.random() * 5);
-	}, 300, 20);*/
+	window.addEventListener("onIntroComplete", () => {
+		timeOut.newTimeOut(() => {
+			window.player= spawnPlayer();
+			MrMonstro(player);
+		}, 1000);
+	});
 
+	window.addEventListener("onLevelExit", () => {
+		timeOut.newTimeOut(drawRouteOutro, 1000);
+	});
+};
+
+const Start= () => {
+	setupEvents();
+	clearCanvas();
+
+	eventSystem.dispatchEvent("onStartNextLevel");
+	
 	getNewFrame();
+
 };
 
 const Update= () => {

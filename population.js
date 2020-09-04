@@ -6,6 +6,12 @@ nurdyStats3= document.getElementById("nurdy_stats3");
 boss1Sprite= document.getElementById("boss1");
 window.onerror= err => console.log(err);
 
+eventSystem.createEvent("onBossDeath");
+eventSystem.createEvent("onLevelComplete");
+eventSystem.createEvent("onLevelExit");
+eventSystem.createEvent("onStartNextLevel");
+eventSystem.createEvent("onIntroComplete");
+
 var isPaused= false,
 	showPausedMessage= true,
 	aniId, 
@@ -23,7 +29,8 @@ var isPaused= false,
 	halfSecond= 0,
 	quarterSecond= 0;
 
-var gameObjectList= [];
+var gameObjectList= [],
+	bossList= [];
 
 //collision arrays
 var projectiles= []

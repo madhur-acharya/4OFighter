@@ -17,7 +17,7 @@ const GameObject= (function ()
 			this.velocity= velocity;
 			this.frictionActive= frictionActive;
 			this.frictionCoefficient= 1;
-			this.objectId= performance.now().toString();
+			this.objectId= performance.now().toString() + Math.round(Math.random() * 1000);
 			this.drawGizmos= false;
 			this.acceleration= new Vector(0, 0);
 			this.layer= "default";
@@ -133,13 +133,13 @@ const GameObject= (function ()
 
 		renderer()
 		{
-			draw_vector(this.position);
+			drawVector(this.position);
 		}
 
 		renderGizmos()
 		{
-			draw_vector(new Vector(0, 0), this.position);
-			draw_vector(this.position, this.velocity, "green");
+			drawVector(new Vector(0, 0), this.position);
+			drawVector(this.position, this.velocity, "green");
 			if(this.collider)
 				draw_bounding_circle(this.position, this.collider ? this.collider.radius : 20);
 		}
@@ -157,7 +157,10 @@ const GameObject= (function ()
 				for(let i= 0; i < this.renderList.length; i++)
 				{
 					if(this.renderList[i].objectId === this.objectId)
+					{
 						this.renderList.splice(i, 1);
+						this.onDestroy && this.onDestroy(this);
+					}
 				}
 			}
 		}
@@ -169,7 +172,10 @@ const GameObject= (function ()
 				for(let i= 0; i < this.renderList.length; i++)
 				{
 					if(this.renderList[i].objectId === this.objectId)
+					{
 						this.renderList.splice(i, 1);
+						this.onDestroy && this.onDestroy(this);
+					}	
 				}
 				this.selfDestructTimer= undefined;
 				this.selfDestructDelay= undefined;
@@ -294,7 +300,7 @@ class Asteroid extends GameObject{
 
 
 class Projectile extends GameObject{
-	constructor(list= [], position= new Vector(0, 0), speed= 10, direction= Math.PI / 2, size= 5)
+	constructor(list= [], position= new Vector(0, 0), speed= 10, direction= Math.PI / 2, size= 5, alias= "enemyProjectile")
 	{
 		const vel= new Vector(0, 0);
 		vel.setMag(speed);
@@ -302,12 +308,12 @@ class Projectile extends GameObject{
 
 		super(list, position);
 		super.velocity= vel;
-		super.alias= "projectile";
+		super.alias= alias;
 		super.layer= "projectile";
 		super.renderer= obj => {
 			context.save();
 			context.beginPath();
-			context.fillStyle= "orange";
+			context.fillStyle= "white";
 			context.arc(obj.position.x, obj.position.y, size, 0, Math.PI * 2);
 			context.fill();
 		}
@@ -315,17 +321,84 @@ class Projectile extends GameObject{
 			type: "circle",
 			radius: size,
 			onCollision: (current, other) => {
-				if(other.alias === "asteroid" || other.alias === "enemy")
-				{
+				if((current.alias === "playerProjectile" && other.alias === "player") || 
+					(current.alias === "enemyProjectile" && other.alias === "enemy") || 
+					current.alias === other.alias || 
+					other.alias === "enemyProjectile" || 
+					other.alias === "playerProjectile")
+					return;
+				else
 					current.destroy();
-				}
-				else if(other.alias !== current.alias)
-				{
-					current.destroy();
-				}
 			},
 			uncolide: false
 		});
 		super.destroy(5000);
 	}
 }
+
+class UIObject{
+	constructor(list= [], position= new Vector(0, 0), renderer= () => {})
+	{
+		this.position= position;
+		this.renderList= list;
+		this.executables= [renderer];
+		this.objectId= performance.now().toString() + Math.round(Math.random() * 1000);
+		list.push(this);
+	}
+
+	selfDestruct()
+	{
+		if(this.selfDestructTimer && this.selfDestructTimer.getDuration() > this.selfDestructDelay)
+		{
+			for(let i= 0; i < this.renderList.length; i++)
+			{
+				if(this.renderList[i].objectId === this.objectId)
+				{
+					this.renderList.splice(i, 1);
+					this.onDestroy && this.onDestroy(this);
+				}
+			}
+			this.selfDestructTimer= undefined;
+			this.selfDestructDelay= undefined;
+		}
+	}
+
+	destroy(delay= 0)
+	{
+		if(delay > 0)
+		{
+			this.selfDestructTimer= new timer();
+			this.selfDestructDelay= delay;
+			this.executables.push("selfDestruct");
+		}
+		else
+		{
+			for(let i= 0; i < this.renderList.length; i++)
+			{
+				if(this.renderList[i].objectId === this.objectId)
+				{
+					this.renderList.splice(i, 1);
+					this.onDestroy && this.onDestroy(this);
+				}
+			}
+		}
+	}
+
+	executeScripts()
+	{
+		this.executables.forEach(itm => {
+			if(typeof(itm) == "string")
+			{
+				this[itm]();
+			}
+			else if(!!(itm && itm.constructor && itm.call && itm.apply))
+			{
+				itm(this);
+			}
+			
+		});
+	}
+}
+
+
+
