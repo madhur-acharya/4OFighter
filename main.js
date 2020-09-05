@@ -87,8 +87,9 @@ const Start= () => {
 	setupEvents();
 	clearCanvas();
 
-	eventSystem.dispatchEvent("onStartNextLevel");
-	
+	//eventSystem.dispatchEvent("onStartNextLevel");
+	const player= spawnPlayer();		
+	spawnTheHive(gameObjectList, player, 2000, 5);
 	getNewFrame();
 
 };

@@ -102,9 +102,10 @@ const GameObject= (function ()
 
 		applyAcceleration()
 		{
-			if(this.velocity.getMag() < this.velocityCap)
+			this.velocity= this.velocity.add(this.acceleration);
+			if(this.velocity.getMag() > this.velocityCap)
 			{
-				this.velocity= this.velocity.add(this.acceleration);
+				this.velocity.setMag(this.velocityCap);
 			}
 		}
 

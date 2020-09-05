@@ -4,7 +4,7 @@ const spawnPlayer= () => {
 	player.health= 10;
 	player.healthCap= 10;
 	player.layer= "projectile";
-	player.damage= 10;
+	player.damage= 1;
 	player.position= new Vector(0, -height / 3);
 	player.renderer= drawSpaceship;
 	player.executables.unshift(playerMovementSnappy);
@@ -68,7 +68,182 @@ function drawSpaceship(gameObject)
 	context.restore();
 };
 
-function chaser(player)
+function spawnTheHive(layer= [], player, delay= 3000, spawnsPerRound= 5)
+{
+	const TheHive= new GameObject(layer);
+	TheHive.alias= "enemy";
+	TheHive.layer= "projectile";
+	TheHive.health= 100;
+	TheHive.healthCap= 100;
+	TheHive.executables.push(drawDossHealthBar);
+
+	TheHive.addCollider({
+		type: "circle",
+		radius: 25,
+		uncolide: false,
+		onCollision: (current, other) => {
+			if(other.alias === "playerProjectile")
+			{
+				current.health-= other.damage || 1;
+				if(current.health <= 0)
+				{
+					current.destroy();
+					interval.clearInterval(current.intervalId);
+				}
+			}
+		}
+	});
+
+	TheHive.renderer= gameObject => {
+		context.save();
+		context.translate(gameObject.position.x, gameObject.position.y);
+		context.beginPath();
+		context.fillStyle= "white";
+		context.arc(0, 0, gameObject.collider.radius, 0, Math.PI * 2);
+		context.fill();
+		context.restore();
+	};
+
+	TheHive.intervalId= interval.newInterval(() => {
+		let slice= (Math.PI * 2) / spawnsPerRound, 
+		angle= 0;
+		for(let i= 0; i < spawnsPerRound; i++)
+		{
+			const vel= new Vector(0, 0);
+			vel.setMag(5);
+			vel.setAngle(angle);
+
+			spawnKaamakazi(player, new Vector(0, 0), vel), 2000;
+			angle= angle + slice;
+		}
+	}, delay);
+
+	return spawnTheHive;
+}
+
+
+function spawnKaamakazi(player, position= new Vector(), velocity= getRandomVector(5,5), delay= 1000)
+{
+	const kaamakazi= new GameObject(gameObjectList, position, velocity);
+	kaamakazi.alias= "enemy";
+	kaamakazi.layer= "projectile";
+	kaamakazi.type= "kaamakazi";
+	kaamakazi.health= 1;
+	kaamakazi.healthCap= 1;
+	kaamakazi.velocityCap= Math.round(Math.random() * 5 + 1);
+	kaamakazi.disableCollisionDetection= true;
+
+	kaamakazi.renderer= (gameObject, damaged= false) => {
+
+		context.beginPath();
+		context.strokeStyle= "white";
+		context.fillStyle= "white";
+		context.save();
+		context.translate(gameObject.position.x, gameObject.position.y);
+		context.rotate(gameObject.velocity.getAngle() - Math.PI / 2);
+		context.arc(0, 0, gameObject.collider.radius, 0, Math.PI * 2);
+		context.moveTo(-(gameObject.collider.radius), 0);
+		context.lineTo(0, -gameObject.collider.radius * 3);
+		context.lineTo((gameObject.collider.radius), 0);
+		context.fill();
+		context.restore();
+	};
+
+	kaamakazi.addCollider({
+		type: "circle",
+		radius: 10,
+		uncolide: true,
+		computeBoundryCollision: false,
+		onCollision: (current, other) => {
+			if(other.alias === "playerProjectile")
+			{
+				current.health-= other.damage || 1;
+				if(current.health <= 0)
+				{
+					current.destroy();
+				}
+			}
+			else if(other.type === "kaamakazi")
+			{
+				current.velocity= Vector.addition(current.velocity, getRandomVector(1, 1)) ;
+			}
+		}
+	});
+
+	timeOut.newTimeOut(() => {
+		kaamakazi.acceleration= new Vector(0.5, 0);
+		kaamakazi.disableCollisionDetection= false;
+		kaamakazi.executables.unshift(gameObject => {
+			const temp_vect= Vector.subtraction(player.position, gameObject.position);
+			gameObject.acceleration.setAngle(temp_vect.getAngle());
+		});
+	}, delay);
+
+	return kaamakazi;
+}
+
+function spawnTurret(player)
+{
+	const turret= new GameObject(gameObjectList);
+	turret.alias= "enemy";
+	turret.layer= "projectile";
+	turret.health= 10;
+	turret.healthCap= 10;
+	turret.addTimer("firerate", new timer());
+	turret.firerate= 500;
+
+	turret.renderer= (gameObject, damaged= false) => {
+		const temp_vect= Vector.subtraction(player.position, gameObject.position);
+		gameObject.shootDirection= temp_vect.getAngle();
+
+		context.beginPath();
+		context.strokeStyle= "white";
+		context.fillStyle= "white";
+		context.save();
+		context.translate(gameObject.position.x, gameObject.position.y);
+		context.rotate(gameObject.shootDirection - Math.PI / 2);
+		context.arc(0, 0, gameObject.collider.radius, 0, Math.PI * 2);
+		context.fill();
+		context.moveTo(0, 0);
+		context.fillRect(-10, 0, 20, 3 * gameObject.collider.radius / 2);
+		context.restore();
+	};
+
+	turret.addCollider({
+		type: "circle",
+		radius: 25,
+		uncolide: true,
+		computeBoundryCollision: false,
+		onCollision: (current, other) => {
+			if(other.alias === "playerProjectile")
+			{
+				turret.health-= other.damage || 1;
+				if(turret.health <= 0)
+				{
+					current.destroy();
+				}
+			}
+		}
+	});
+
+	turret.executables.unshift(gameObject => {
+
+		if(gameObject.timers.firerate)
+		{	
+			if(gameObject.timers.firerate.getDuration() > (gameObject.firerate || 250))
+			{
+				gameObject.timers.firerate.reset();
+
+				const proj= new Projectile(gameObjectList, new Vector(gameObject.position.x, gameObject.position.y), 10, gameObject.shootDirection, 10);
+				proj.alias= "enemyProjectile";
+			}
+		}
+	});
+
+	return turret;
+}
+
+function spawnChaser(player)
 {
 	const dir= (Math.random() * 360) * Math.PI / 180,
 		a= (width / 2) * Math.cos(dir),
@@ -87,10 +262,12 @@ function chaser(player)
 
 		context.beginPath();
 		context.strokeStyle= "white";
+		context.fillStyle= "white";
 		context.save();
 		context.translate(gameObject.position.x, gameObject.position.y);
 		context.rotate(gameObject.velocity.getAngle() - Math.PI / 2);
 		context.arc(0, 0, gameObject.collider.radius, 0, Math.PI * 2);
+		context.fill();
 		context.moveTo(-(gameObject.collider.radius), 0);
 		context.lineTo(-(gameObject.collider.radius * 1.5), -gameObject.collider.radius * 2.5);
 		context.moveTo((gameObject.collider.radius), 0);
@@ -135,7 +312,9 @@ function chaser(player)
 				proj.alias= "enemyProjectile";
 			}
 		}
-	})
+	});
+
+	return chaser;
 }
 
 function theDuke()
@@ -207,8 +386,6 @@ function MrMonstro(player)
 	monstro.layer= "projectile";
 	monstro.health= 175;
 	monstro.healthCap= 175;
-	//monstro.drawGizmos= true;
-	//monstro.disableCollisionDetection= true;
 	monstro.addTimer("firerate", new timer());
 	monstro.firerate= 500;
 	monstro.movementTick= false;
@@ -275,9 +452,11 @@ function MrMonstro(player)
 		}
 		monstro.movementTick= !monstro.movementTick;
 	}, 1000);
+
+	return MrMonstro;
 };
 
-function attack1(position= new Vector(0, 0), numberOfProjectiles= 10, offset= 0)
+function bulletSplosion(position= new Vector(0, 0), numberOfProjectiles= 10, offset= 0)
 {
 	let slice= (Math.PI * 2) / numberOfProjectiles, 
 	angle= offset;
@@ -412,7 +591,7 @@ function playerMovementSnappy(player)
 
 };
 
-function drawDossHealthBar(gameObject, position= new Vector(0, height - 50), barWidth= (width - 200), colors= ["brown", "red"])
+function drawDossHealthBar(gameObject, position= new Vector(0, height - 50), barWidth= (width - 200), colors= ["black", "white"])
 {
 	context.save();
 	context.translate(position.x, position.y);
@@ -514,5 +693,7 @@ function spawnExit()
 		context.fill();
 		context.restore();
 	};
+
+	return exit;
 }
 
