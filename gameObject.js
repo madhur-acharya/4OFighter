@@ -134,7 +134,7 @@ const GameObject= (function ()
 
 		renderer()
 		{
-			drawVector(this.position);
+			//drawVector(this.position);
 		}
 
 		renderGizmos()
@@ -248,6 +248,7 @@ class Asteroid extends GameObject{
 		super(list, position);
 		super.collider= collider;
 		super.renderList= list;
+		super.alias= "enemy";
 		this.vertexArray= [];
 		this.vertices= vertices;
 		this.health= 3;
@@ -383,6 +384,11 @@ class UIObject{
 				}
 			}
 		}
+	}
+
+	onDestroy()
+	{
+
 	}
 
 	executeScripts()

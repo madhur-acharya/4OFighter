@@ -11,6 +11,8 @@ eventSystem.createEvent("onLevelComplete");
 eventSystem.createEvent("onLevelExit");
 eventSystem.createEvent("onStartNextLevel");
 eventSystem.createEvent("onIntroComplete");
+eventSystem.createEvent("onOutroComplete");
+eventSystem.createEvent("onlifeLost");
 
 var isPaused= false,
 	showPausedMessage= true,
@@ -27,10 +29,15 @@ var isPaused= false,
 	time= 0,
 	seconds= 0
 	halfSecond= 0,
-	quarterSecond= 0;
+	quarterSecond= 0
+	lives= 3;
+
+var player;
 
 var gameObjectList= [],
-	bossList= [];
+	bossList= [],
+	levelList= [],
+	routeList= ["index.html", "login", "cats.jpg", "download-free-ram.php"];
 
 //collision arrays
 var projectiles= []

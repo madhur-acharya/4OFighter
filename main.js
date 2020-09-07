@@ -62,6 +62,10 @@ const getNewFrame= () => {
 
 const setupEvents= () => {
 	window.addEventListener("onBossDeath", () => {
+		const pos= player.position;
+		gameObjectList.length= 0;
+		player= spawnPlayer();
+		player.position= pos;
 		eventSystem.dispatchEvent("onLevelComplete");
 	});
 
@@ -69,27 +73,41 @@ const setupEvents= () => {
 		timeOut.newTimeOut(spawnExit, 1000);
 	});
 
-	window.addEventListener("onStartNextLevel", () => drawRouteIntro());
+	window.addEventListener("onStartNextLevel", () => drawRouteIntro(routeList[0]));
 
 	window.addEventListener("onIntroComplete", () => {
 		timeOut.newTimeOut(() => {
-			window.player= spawnPlayer();
-			MrMonstro(player);
+			player= spawnPlayer();
+			levelList.pop()(player);
+		}, 1000);
+	});
+
+	window.addEventListener("onOutroComplete", () => {
+		routeList.shift();
+		timeOut.newTimeOut(() => {
+			eventSystem.dispatchEvent("onStartNextLevel");
 		}, 1000);
 	});
 
 	window.addEventListener("onLevelExit", () => {
-		timeOut.newTimeOut(drawRouteOutro, 1000);
+		gameObjectList.length= 0;
+		timeOut.newTimeOut(() => drawRouteOutro(routeList[0]), 1000);
+	});
+
+	window.addEventListener("onlifeLost", () => {
+		player= spawnPlayer();
 	});
 };
 
 const Start= () => {
+
+	levelList= [startLevel2, startLevel1, startLevel3];
+
 	setupEvents();
 	clearCanvas();
 
-	//eventSystem.dispatchEvent("onStartNextLevel");
-	const player= spawnPlayer();		
-	spawnTheHive(gameObjectList, player, 2000, 5);
+	eventSystem.dispatchEvent("onStartNextLevel");
+
 	getNewFrame();
 
 };

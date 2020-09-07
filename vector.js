@@ -35,29 +35,25 @@ class Vector{
 
 	static division= (vect, scalar) => new Vector(vect.x / scalar, vect.y / scalar);
 
-	/*add= vect => {
+	addTo= vect => {
 		this.x= this.x + vect.x; 
 		this.y= this.y + vect.y;
-		return new Vector(this.x, this.y);
 	}
 		
-	subtract= vect => {
+	subtractWith= vect => {
 		this.x= this.x - vect.x; 
 		this.y= this.y - vect.y;
-		return new Vector(this.x, this.y);	
 	}
 	
-	multiply= scalar => {
+	multiplyWith= scalar => {
 		this.x= this.x * scalar;
 		this.y= this.y * scalar;
-		return new Vector(this.x, this.y);
 	}
 
-	divide= scalar => {
+	divideBy= scalar => {
 		this.x= this.x / scalar;
 		this.y= this.y / scalar;
-		return new Vector(this.x, this.y);
-	}*/
+	}
 
 };
 

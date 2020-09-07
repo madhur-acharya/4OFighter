@@ -82,7 +82,7 @@ class Interval{
 		this.intervalArray= [];
 	}
 
-	newInterval(onInterval= () => {}, duaration, maxIterations= -1)
+	newInterval(onInterval= () => {}, duaration, maxIterations= -1, onIntervalEnd= () => {})
 	{
 		const intervalId= performance.now().toString();
 		this.intervalArray.push({
@@ -91,13 +91,16 @@ class Interval{
 			iterationCount: 0,
 			onInterval: onInterval,
 			duaration: duaration,
-			intervalId: performance.now().toString()
+			intervalId: performance.now().toString(),
+			onIntervalEnd: onIntervalEnd
 		});
 		return intervalId;
 	}
 
 	clearInterval(id)
 	{
+		if(!intervalId) return;
+		console.log(id, this.intervalArray.filter(itm => !itm.intervalId === id));
 		this.intervalArray= this.intervalArray.filter(itm => !itm.intervalId === id);
 	}
 
@@ -112,7 +115,10 @@ class Interval{
 				ele.timer.reset();
 				ele.iterationCount+= 1;
 				if(ele.maxIterations !== -1 && ele.iterationCount >= ele.maxIterations)
+				{
+					ele.onIntervalEnd && ele.onIntervalEnd();
 					this.intervalArray.splice(i, 1);
+				}
 			}
 		}
 	}
@@ -279,18 +285,16 @@ function fullscreen()
 }
 //------------------------------------------------------------------------
 
-function circleRenderer(obj, color= "white", radius= 10, fill= true)
+function circleRenderer(obj, color= "white", fill= true)
 {
-	return () => {
-		context.save();
-		context.translate(obj.position.x, obj.position.y);
-		context.beginPath();
-		context.fillStyle= color;
-		context.arc(0, 0, radius, 0, Math.PI * 2);
-		if(fill) context.fill();
-		else context.stroke();
-		context.restore();
-	};
+	context.save();
+	context.translate(obj.position.x, obj.position.y);
+	context.beginPath();
+	context.fillStyle= color;
+	context.arc(0, 0, obj.collider.radius, 0, Math.PI * 2);
+	if(fill) context.fill();
+	else context.stroke();
+	context.restore();
 };
 
 //------------------------------------------------------------------------

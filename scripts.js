@@ -1,6 +1,7 @@
 const spawnPlayer= () => {
 	const player= new GameObject(gameObjectList);
 	player.alias= "player";
+	player.type= "player";
 	player.health= 10;
 	player.healthCap= 10;
 	player.layer= "projectile";
@@ -8,16 +9,15 @@ const spawnPlayer= () => {
 	player.position= new Vector(0, -height / 3);
 	player.renderer= drawSpaceship;
 	player.executables.unshift(playerMovementSnappy);
-	player.executables.push(obj => drawDossHealthBar(obj, new Vector(-(width/2) + 120, 20), 200, ["brown", "green"]));
+	player.executables.push(obj => drawDossHealthBar(obj, new Vector(-(width/2) + 120, 20), 200, ["black", "white"]));
 	player.addTimer("firerate", new timer());
 	player.firerate= 100;
-	//player.drawGizmos= true;
 	player.addCollider({
 		type: "circle",
 		radius: 15,
 		uncolide: true,
 		onCollision: (current, other) => {
-			if(other.alias === "asteroid" || other.alias === "enemy" || other.alias === "enemyProjectile")
+			if(other.alias === "enemy" || other.alias === "enemyProjectile")
 			{
 				if(!current.disableCollisionDetection)
 				{
@@ -26,7 +26,7 @@ const spawnPlayer= () => {
 					current.disableCollisionDetection= true;
 					timeOut.newTimeOut(() => {
 						current.disableCollisionDetection= false;
-					}, 100);
+					}, 200);
 				}
 				
 				if(current.health <= 0)
@@ -36,6 +36,11 @@ const spawnPlayer= () => {
 			}
 		}
 	});
+
+	player.onDestroy= gameObject => {
+		playerDeathScene();
+	}
+
 	return player;
 };
 
@@ -68,27 +73,38 @@ function drawSpaceship(gameObject)
 	context.restore();
 };
 
-function spawnTheHive(layer= [], player, delay= 3000, spawnsPerRound= 5)
+function spawnTheHive(player, delay= 3000, spawnsPerRound= 5)
 {
-	const TheHive= new GameObject(layer);
+	const TheHive= new GameObject(gameObjectList, getRandomVector(), getRandomVector(3, 3));
 	TheHive.alias= "enemy";
 	TheHive.layer= "projectile";
 	TheHive.health= 100;
 	TheHive.healthCap= 100;
 	TheHive.executables.push(drawDossHealthBar);
+	TheHive.addTimer("firerate", new timer());
+	TheHive.spawnsPerRound= spawnsPerRound;
+	TheHive.phase= 1;
+	TheHive.firerate= delay;
 
 	TheHive.addCollider({
 		type: "circle",
-		radius: 25,
+		radius: 35,
 		uncolide: false,
+		computeBoundryCollision: true,
 		onCollision: (current, other) => {
 			if(other.alias === "playerProjectile")
 			{
 				current.health-= other.damage || 1;
+				if(current.health <= current.healthCap / 2 && current.phase === 1)
+				{
+					current.spawnsPerRound= Math.round(current.spawnsPerRound * 1.5);
+					current.phase= 2;
+				}
 				if(current.health <= 0)
 				{
 					current.destroy();
-					interval.clearInterval(current.intervalId);
+					gameObjectList= gameObjectList.filter((itm, indx) => itm.alias === "player");
+					eventSystem.dispatchEvent("onBossDeath");
 				}
 			}
 		}
@@ -104,23 +120,85 @@ function spawnTheHive(layer= [], player, delay= 3000, spawnsPerRound= 5)
 		context.restore();
 	};
 
-	TheHive.intervalId= interval.newInterval(() => {
-		let slice= (Math.PI * 2) / spawnsPerRound, 
-		angle= 0;
-		for(let i= 0; i < spawnsPerRound; i++)
-		{
-			const vel= new Vector(0, 0);
-			vel.setMag(5);
-			vel.setAngle(angle);
+	TheHive.executables.unshift(gameObject => {
 
-			spawnKaamakazi(player, new Vector(0, 0), vel), 2000;
-			angle= angle + slice;
+		if(gameObject.timers.firerate)
+		{	
+			if(gameObject.timers.firerate.getDuration() > (gameObject.firerate || 1000))
+			{
+				gameObject.timers.firerate.reset();
+				
+				let slice= (Math.PI * 2) / TheHive.spawnsPerRound, 
+				angle= 0;
+				for(let i= 0; i < TheHive.spawnsPerRound; i++)
+				{
+					const vel= new Vector(0, 0);
+					vel.setMag(5);
+					vel.setAngle(angle);
+
+					spawnKaamakazi(player, TheHive.position, vel), 2000;
+					angle= angle + slice;
+				}
+			}
 		}
-	}, delay);
+	});
 
 	return spawnTheHive;
 }
 
+function spawnDrFatal(player, delay= 150, projectileCount= 6)
+{
+	const drFatal= spawnXPloder(new Vector(), projectileCount, 15, delay);
+	drFatal.alias= "enemy";
+	drFatal.layer= "projectile";
+	drFatal.health= 100;
+	drFatal.healthCap= 100;
+	drFatal.executables.push(drawDossHealthBar);
+	drFatal.phase= 1;
+	drFatal.flag= false;
+	drFatal.velocity= getRandomVector(1, 1);
+	drFatal.projectileSpeed= 4;
+
+	drFatal.addCollider({
+		type: "circle",
+		radius: 35,
+		uncolide: true,
+		computeBoundryCollision: true,
+		onCollision: (current, other) => {
+			if(other.alias === "playerProjectile")
+			{
+				current.health-= other.damage || 1;
+				if(current.health <= current.healthCap / 2 && current.phase === 1)
+				{
+					current.projectileCount= Math.round(current.projectileCount * 1.5);
+					current.projectileSpeed= 7;
+					current.phase= 2;
+				}
+				if(current.health <= 0)
+				{
+					current.destroy();
+					gameObjectList= gameObjectList.filter((itm, indx) => itm.alias === "player");
+					eventSystem.dispatchEvent("onBossDeath");
+				}
+			}
+		}
+	});
+
+	drFatal.executables.unshift(gameObject => {
+
+		if(gameObject.timers.firerate)
+		{	
+			if(gameObject.timers.firerate.getDuration() > (gameObject.firerate || 1000))
+			{
+				gameObject.timers.firerate.reset();
+				const off= Vector.subtraction(player.position, gameObject.position).getAngle();
+				bulletSplosion(gameObject.position, gameObject.projectileCount, 15, off, gameObject.projectileSpeed);
+			}
+		}
+	});
+
+	return spawnTheHive;
+}
 
 function spawnKaamakazi(player, position= new Vector(), velocity= getRandomVector(5,5), delay= 1000)
 {
@@ -182,15 +260,15 @@ function spawnKaamakazi(player, position= new Vector(), velocity= getRandomVecto
 	return kaamakazi;
 }
 
-function spawnTurret(player)
+function spawnTurret(player, position= new Vector(), firerate= 500)
 {
-	const turret= new GameObject(gameObjectList);
+	const turret= new GameObject(gameObjectList, position);
 	turret.alias= "enemy";
 	turret.layer= "projectile";
-	turret.health= 10;
-	turret.healthCap= 10;
+	turret.health= 5;
+	turret.healthCap= 5;
 	turret.addTimer("firerate", new timer());
-	turret.firerate= 500;
+	turret.firerate= firerate;
 
 	turret.renderer= (gameObject, damaged= false) => {
 		const temp_vect= Vector.subtraction(player.position, gameObject.position);
@@ -234,7 +312,7 @@ function spawnTurret(player)
 			{
 				gameObject.timers.firerate.reset();
 
-				const proj= new Projectile(gameObjectList, new Vector(gameObject.position.x, gameObject.position.y), 10, gameObject.shootDirection, 10);
+				const proj= new Projectile(gameObjectList, new Vector(gameObject.position.x, gameObject.position.y), 5, gameObject.shootDirection, 10);
 				proj.alias= "enemyProjectile";
 			}
 		}
@@ -308,7 +386,7 @@ function spawnChaser(player)
 			{
 				gameObject.timers.firerate.reset();
 
-				const proj= new Projectile(gameObjectList, new Vector(gameObject.position.x, gameObject.position.y), 7, temp_vect.getAngle(), 7);
+				const proj= new Projectile(gameObjectList, new Vector(gameObject.position.x, gameObject.position.y), 5, temp_vect.getAngle(), 7);
 				proj.alias= "enemyProjectile";
 			}
 		}
@@ -317,7 +395,7 @@ function spawnChaser(player)
 	return chaser;
 }
 
-function theDuke()
+function spawnTheDuke()
 {
 	let dukeCount= 0;
 
@@ -328,14 +406,14 @@ function theDuke()
 
 			const duke= new Asteroid(gameObjectList, positon, vertices);
 			duke.velocity= getRandomVector(5, 5);
-			duke.alias= "asteroid";
+			duke.alias= "enemy";
 			duke.layer= "projectile";
 			duke.health= health;
 			duke.healthCap= health;
 			duke.executables.push(gameObject => {
 				const pos= new Vector(gameObject.position.x - (gameObject.collider.radius / 2), gameObject.position.y + (gameObject.collider.radius));
 				const thickness= 7;
-				const colors= ["brown", "red"];
+				const colors= ["black", "white"];
 				
 				context.save();
 				context.translate(pos.x, pos.y);
@@ -379,7 +457,7 @@ function theDuke()
 	dukeSpawner();
 };
 
-function MrMonstro(player)
+function spawnMrMonstro(player)
 {
 	const monstro= new GameObject(gameObjectList, getRandomVector());
 	monstro.alias= "enemy";
@@ -388,7 +466,12 @@ function MrMonstro(player)
 	monstro.healthCap= 175;
 	monstro.addTimer("firerate", new timer());
 	monstro.firerate= 500;
+	monstro.addTimer("movementRate", new timer())
+	monstro.movementRate= 1000;
 	monstro.movementTick= false;
+	monstro.spread= 30;
+	monstro.projectilesPerShot= 10
+	monstro.phase= 1;
 
 	monstro.executables.push(drawDossHealthBar);
 
@@ -396,7 +479,7 @@ function MrMonstro(player)
 		context.save();
 		context.translate(gameObject.position.x, gameObject.position.y);
 		context.beginPath();
-		context.fillStyle= damaged ? "crimson" : "red";
+		context.fillStyle= damaged ? "grey" : "white";
 		context.arc(0, 0, gameObject.collider.radius, 0, Math.PI * 2);
 		context.fill();
 		context.restore();
@@ -411,60 +494,120 @@ function MrMonstro(player)
 			if(other.alias === "playerProjectile")
 			{
 				monstro.health-= other.damage || 1;
+				if(current.health <= current.healthCap / 2 && current.phase === 1)
+				{
+					current.projectilesPerShot= Math.round(current.projectilesPerShot * 1.5);
+					current.spread= current.spread * 2;
+					current.phase= 2;
+				}
 				if(monstro.health <= 0)
 				{
 					current.destroy();
-					interval.clearInterval(current.intervalId);
 					eventSystem.dispatchEvent("onBossDeath");
 				}
 			}
 		}
 	});
 
-	monstro.intervalId= interval && interval.newInterval(() => {
-		if(monstro.movementTick === false)
-		{
-			const temp_vect= Vector.subtraction(player.position, monstro.position);
-			temp_vect.setMag(5);
-			monstro.velocity= temp_vect;
-		}
-		else
-		{
-			monstro.velocity= new Vector();
-
-			const temp_vect= Vector.subtraction(player.position, monstro.position);
-			monstro.shootDirection= temp_vect.getAngle();
-
-			if(monstro.timers.firerate)
-			{	
-				if(monstro.timers.firerate.getDuration() > (monstro.firerate || 250))
+	monstro.executables.unshift(gameObject => {
+		if(gameObject.timers.movementRate)
+		{	
+			if(gameObject.timers.movementRate.getDuration() > (gameObject.movementRate || 1000))
+			{
+				gameObject.timers.movementRate.reset();
+				
+				if(monstro.movementTick === false)
 				{
-					monstro.timers.firerate.reset();
+					const temp_vect= Vector.subtraction(player.position, monstro.position);
+					temp_vect.setMag(5);
+					monstro.velocity= temp_vect;
+				}
+				else
+				{
+					monstro.velocity= new Vector();
 
-					const offsetAng= Math.PI/30;
+					const temp_vect= Vector.subtraction(player.position, monstro.position);
+					monstro.shootDirection= temp_vect.getAngle();
 
-					for(let i= 0; i < 10; i++)
-					{
-						const proj= new Projectile(gameObjectList, new Vector(monstro.position.x, monstro.position.y), (Math.random() * 5 + 5), (temp_vect.getAngle() + (offsetAng * i)), 10, "enemyProjectile");
+					if(monstro.timers.firerate)
+					{	
+						if(monstro.timers.firerate.getDuration() > (monstro.firerate || 250))
+						{
+							monstro.timers.firerate.reset();
+
+							const offsetAng= Math.PI/monstro.spread;
+
+							for(let i= 0; i < monstro.projectilesPerShot; i++)
+							{
+								const proj= new Projectile(gameObjectList, new Vector(monstro.position.x, monstro.position.y), (Math.random() * 5 + 4), (temp_vect.getAngle() + (offsetAng * i)), 10, "enemyProjectile");
+							}
+							if(monstro.phase === 2)
+								bulletSplosion(monstro.position, 7);
+						}
 					}
 				}
+				monstro.movementTick= !monstro.movementTick;
 			}
 		}
-		monstro.movementTick= !monstro.movementTick;
-	}, 1000);
+	});
 
-	return MrMonstro;
+	return monstro;
 };
 
-function bulletSplosion(position= new Vector(0, 0), numberOfProjectiles= 10, offset= 0)
+function bulletSplosion(position= new Vector(0, 0), numberOfProjectiles= 10, size= 10, offset= 0, speed= 7)
 {
 	let slice= (Math.PI * 2) / numberOfProjectiles, 
 	angle= offset;
-	for(let i= 0; i <= numberOfProjectiles; i++)
+	for(let i= 0; i < numberOfProjectiles; i++)
 	{
-		new Projectile(gameObjectList, position, 7, angle, 20);
+		new Projectile(gameObjectList, position, speed, angle, size);
 		angle= angle + slice;
 	}
+};
+
+function spawnXPloder(position= getRandomVector(), projCount= 4, size= 10, firerate= 1000)
+{
+	const xPloder= new GameObject(gameObjectList, position, getRandomVector(5, 5));
+	xPloder.layer= "projectile";
+	xPloder.alias= "enemy";
+	xPloder.type= "xPloder";
+	xPloder.projectileCount= projCount;
+	xPloder.health= 5;
+	xPloder.healthCap= 5;
+	xPloder.addTimer("firerate", new timer());
+	xPloder.firerate= firerate;
+	xPloder.renderer= circleRenderer;
+
+	xPloder.addCollider({
+		type: "circle",
+		radius: 30,
+		uncolide: true,
+		computeBoundryCollision: true,
+		onCollision: (current, other) => {
+			if(other.alias === "playerProjectile")
+			{
+				current.health-= other.damage || 1;
+				if(current.health <= 0)
+				{
+					current.destroy();
+				}
+			}
+		}
+	});
+
+	xPloder.executables.unshift(gameObject => {
+
+		if(gameObject.timers.firerate)
+		{	
+			if(gameObject.timers.firerate.getDuration() > (gameObject.firerate || 1000))
+			{
+				gameObject.timers.firerate.reset();
+				bulletSplosion(xPloder.position, xPloder.projectileCount, size);
+			}
+		}
+	});
+
+	return xPloder;
 };
 
 function playerMovementSnappy(player)
@@ -618,10 +761,11 @@ function drawRouteIntro(route= "index.html")
 		context.fillStyle= "white";
 		context.font = "50px sans";
 		context.fillText(text, -context.measureText(text).width / 2, 0);
+		context.font = "80px sans";
 		if(gameObject.triggerTransition)
 		{
 			context.fillStyle= "red";
-			context.fillText("404", -context.measureText("404").width / 2, 60);
+			context.fillText("404", -context.measureText("404").width / 2, 90);
 		}
 		context.restore();
 	});
@@ -632,7 +776,7 @@ function drawRouteIntro(route= "index.html")
 	timeOut.newTimeOut(() => {
 		UI.triggerTransition= true;
 		UI.destroy(2000);
-	}, 3000);
+	}, 2000);
 
 };
 
@@ -645,19 +789,23 @@ function drawRouteOutro(route= "index.html")
 		context.fillStyle= "white";
 		context.font = "50px sans";
 		context.fillText(text, -context.measureText(text).width / 2, 0);
+		context.font = "80px sans";
 		if(gameObject.triggerTransition)
 		{
 			context.fillStyle= "green";
-			context.fillText("200", -context.measureText("200").width / 2, 60);
+			context.fillText("200", -context.measureText("200").width / 2, 90);
 		}
 		else
 		{
 			context.fillStyle= "red";
-			context.fillText("404", -context.measureText("404").width / 2, 60);
+			context.fillText("404", -context.measureText("404").width / 2, 90);
 		}
 		context.restore();
 	});
 	UI.triggerTransition= false;
+	UI.onDestroy= () => {
+		eventSystem.dispatchEvent("onOutroComplete");
+	};
 	timeOut.newTimeOut(() => {
 		UI.triggerTransition= true;
 		UI.destroy(2000);
@@ -674,7 +822,7 @@ function spawnExit()
 		radius: 50,
 		uncolide: false,
 		computeBoundryCollision: false,
-		onCollision: (current, other) => {console.log("!");
+		onCollision: (current, other) => {
 			if(other.alias === "player")
 			{
 				current.destroy();
@@ -697,3 +845,208 @@ function spawnExit()
 	return exit;
 }
 
+function startLevel1(player)
+{
+	const level1= new GameObject(gameObjectList);
+	level1.alias= "level";
+	level1.enemyCount= 0;
+	level1.spawningComplete= false;
+	level1.executables.push((gameObject) => {
+		nurdyStats3.innerHTML= level1.enemyCount;
+		if(gameObject.spawningComplete && gameObject.enemyCount <= 0)
+		{
+			gameObject.destroy();
+			timeOut.newTimeOut(() => {
+				spawnMrMonstro(player);
+			}, 2000);
+		}
+
+	});
+
+	let enemy= spawnTurret(player, new Vector(width / 3, height / 3));
+		enemy.onDestroy= () => level1.enemyCount--;
+	enemy= spawnTurret(player, new Vector(-width / 3, height / 3));
+		enemy.onDestroy= () => level1.enemyCount--;
+	enemy= spawnTurret(player, new Vector(width / 3, -height / 3));
+		enemy.onDestroy= () => level1.enemyCount--;
+	enemy= spawnTurret(player, new Vector(-width / 3, -height / 3));
+		enemy.onDestroy= () => level1.enemyCount--;
+
+	level1.enemyCount= 4;
+
+	interval.newInterval(() => {
+		enemy=spawnChaser(player);
+			enemy.onDestroy= () => level1.enemyCount--;
+		enemy=spawnChaser(player);
+			enemy.onDestroy= () => level1.enemyCount--;
+		
+		level1.enemyCount+= 2;
+	}, 3000, 3, () => {
+		console.log("spawn complete");
+		level1.spawningComplete= true;
+	});
+};
+
+
+function startLevel2(player)
+{
+	const level2= new GameObject(gameObjectList);
+	level2.alias= "level";
+	level2.enemyCount= 0;
+	level2.spawningComplete= 0;
+	level2.executables.push((gameObject) => {
+		nurdyStats3.innerHTML= level2.enemyCount;
+		if(gameObject.spawningComplete === 2 && gameObject.enemyCount <= 0)
+		{
+			gameObject.destroy();
+			timeOut.newTimeOut(() => {
+				spawnTheHive(player);
+			}, 2000);
+		}
+
+	});
+
+	const spacing= 75;
+
+	let enemy= spawnTurret(player, new Vector(0, spacing));
+		enemy.onDestroy= () => level2.enemyCount--;
+	enemy= spawnTurret(player, new Vector(0, -spacing));
+		enemy.onDestroy= () => level2.enemyCount--;
+	enemy= spawnTurret(player, new Vector(spacing, 0));
+		enemy.onDestroy= () => level2.enemyCount--;
+	enemy= spawnTurret(player, new Vector(-spacing, 0));
+		enemy.onDestroy= () => level2.enemyCount--;
+
+	level2.enemyCount= 4;
+
+	interval.newInterval(() => {
+		let slice= (Math.PI * 2) / 10, 
+		angle= 0;
+		for(let i= 0; i < 10; i++)
+		{
+			const vel= new Vector(0, 0);
+			vel.setMag(5);
+			vel.setAngle(angle);
+
+			const enemy= spawnKaamakazi(player, new Vector(), vel);
+			enemy.onDestroy= () => level2.enemyCount--;
+			angle= angle + slice;
+
+			level2.enemyCount+= 1;
+		}
+		
+	}, 3000, 5, () => {
+		console.log("spawn complete");
+		level2.spawningComplete++;
+	});
+
+	interval.newInterval(() => {
+		enemy=spawnChaser(player);
+			enemy.onDestroy= () => level2.enemyCount--;
+		
+		level2.enemyCount+= 1;
+	}, 1000, 10, () => {
+		console.log("spawn complete");
+		level2.spawningComplete++;
+	});
+};
+
+function startLevel3(player)
+{
+	const level3= new GameObject(gameObjectList);
+	level3.alias= "level";
+	level3.enemyCount= 0;
+	level3.spawningComplete= 0;
+	level3.executables.push((gameObject) => {
+		nurdyStats3.innerHTML= level3.enemyCount;
+		if(gameObject.spawningComplete && gameObject.enemyCount <= 0)
+		{
+			gameObject.destroy();
+			timeOut.newTimeOut(() => {
+				spawnDrFatal(player);
+			}, 2000);
+		}
+
+	});
+
+	let enemy= spawnTurret(player, new Vector(0, height / 2.5), 1000);
+		enemy.onDestroy= () => level3.enemyCount--;
+	enemy= spawnTurret(player, new Vector(width / 2.5, height / 2.5), 1000);
+		enemy.onDestroy= () => level3.enemyCount--;
+	enemy= spawnTurret(player, new Vector(-width / 2.5, height / 2.5), 1000);
+		enemy.onDestroy= () => level3.enemyCount--;
+	enemy= spawnTurret(player, new Vector(0, -height / 2.5), 1000);
+		enemy.onDestroy= () => level3.enemyCount--;
+	enemy= spawnTurret(player, new Vector(width / 2.5, -height / 2.5), 1000);
+		enemy.onDestroy= () => level3.enemyCount--;
+	enemy= spawnTurret(player, new Vector(-width / 2.5, -height / 2.5), 1000);
+		enemy.onDestroy= () => level3.enemyCount--;
+
+	level3.enemyCount= 6;
+
+	interval.newInterval(() => {
+		/*let slice= (Math.PI * 2) / 3, 
+		angle= 0;
+		for(let i= 0; i < 3; i++)
+		{
+			const vel= new Vector(0, 0);
+			vel.setMag(5);
+			vel.setAngle(angle);
+
+			const enemy= spawnKaamakazi(player, new Vector(), vel);
+			enemy.onDestroy= () => level3.enemyCount--;
+			angle= angle + slice;
+
+			level3.enemyCount+= 1;
+		}*/
+		
+	}, 3000, 5, () => {
+		console.log("spawn complete");
+		level3.spawningComplete++;
+	});
+
+	interval.newInterval(() => {
+		const enemy= spawnXPloder(getRandomVector(), 4, 10);
+			enemy.onDestroy= () => level3.enemyCount--;
+		
+		level3.enemyCount+= 1;
+	}, 1000, 5, () => {
+		console.log("spawn complete");
+		level3.spawningComplete++;
+	});
+};
+
+function playerDeathScene()
+{
+	const UI= new UIObject(gameObjectList, new Vector(), gameObject => {
+		let pos= new Vector(-150, 0);
+
+		for(let i= 0; i < lives; i++)
+		{
+			context.save();
+			context.translate(pos.x, pos.y);
+			context.beginPath();
+			context.fillStyle= "red";
+			context.arc(0, 0, 25, 0, Math.PI * 2);
+			context.arc(40, 0, 25, 0, Math.PI * 2);
+			context.fill();
+
+			context.rotate(Math.PI / 4);
+			context.fillRect(-25, -53, 50, 50);
+			context.restore();
+
+			pos.x= pos.x + 150;
+		}
+	});
+	UI.triggerTransition= false;
+	UI.onDestroy= () => {
+		eventSystem.dispatchEvent("onlifeLost");
+	};
+	timeOut.newTimeOut(() => {
+		lives--;
+		timeOut.newTimeOut(() => {
+			UI.destroy(1000);
+		}, 2000);
+	}, 2000);
+
+};
