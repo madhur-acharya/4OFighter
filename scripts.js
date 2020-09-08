@@ -5,13 +5,26 @@ const spawnPlayer= () => {
 	player.health= 10;
 	player.healthCap= 10;
 	player.layer= "projectile";
-	player.damage= 1;
+	player.damage= 10;
 	player.position= new Vector(0, -height / 3);
 	player.renderer= drawSpaceship;
 	player.executables.unshift(playerMovementSnappy);
 	player.executables.push(obj => drawDossHealthBar(obj, new Vector(-(width/2) + 120, 20), 200, ["black", "white"]));
 	player.addTimer("firerate", new timer());
+	player.addTimer("superrate", new timer());
 	player.firerate= 100;
+	player.superrate= 5000;
+	player.timers.superrate.start_time= -(time + 5000);
+	player.executables.push(obj => {
+		context.save();
+		context.translate(-(width/2) + 20, -(height/2) + 10);
+		context.beginPath();
+		context.fillStyle= "grey";
+		let length= Math.round(obj.timers.superrate.getDuration()) / 40;
+		length= length < 250 ? length : 250;
+		context.fillRect(0, 0, length, 10);
+		context.restore();
+	});
 	player.addCollider({
 		type: "circle",
 		radius: 15,
@@ -38,7 +51,7 @@ const spawnPlayer= () => {
 	});
 
 	player.onDestroy= gameObject => {
-		playerDeathScene();
+		eventSystem.dispatchEvent("onPlayerDeath");
 	}
 
 	return player;
@@ -146,13 +159,13 @@ function spawnTheHive(player, delay= 3000, spawnsPerRound= 5)
 	return spawnTheHive;
 }
 
-function spawnDrFatal(player, delay= 150, projectileCount= 6)
+function spawnDrFatal(player, delay= 350, projectileCount= 10)
 {
 	const drFatal= spawnXPloder(new Vector(), projectileCount, 15, delay);
 	drFatal.alias= "enemy";
 	drFatal.layer= "projectile";
-	drFatal.health= 100;
-	drFatal.healthCap= 100;
+	drFatal.health= 150;
+	drFatal.healthCap= 150;
 	drFatal.executables.push(drawDossHealthBar);
 	drFatal.phase= 1;
 	drFatal.flag= false;
@@ -291,7 +304,7 @@ function spawnTurret(player, position= new Vector(), firerate= 500)
 		type: "circle",
 		radius: 25,
 		uncolide: true,
-		computeBoundryCollision: false,
+		computeBoundryCollision: true,
 		onCollision: (current, other) => {
 			if(other.alias === "playerProjectile")
 			{
@@ -516,37 +529,37 @@ function spawnMrMonstro(player)
 			{
 				gameObject.timers.movementRate.reset();
 				
-				if(monstro.movementTick === false)
+				if(gameObject.movementTick === false)
 				{
-					const temp_vect= Vector.subtraction(player.position, monstro.position);
+					const temp_vect= Vector.subtraction(player.position, gameObject.position);
 					temp_vect.setMag(5);
-					monstro.velocity= temp_vect;
+					gameObject.velocity= temp_vect;
 				}
 				else
 				{
-					monstro.velocity= new Vector();
+					gameObject.velocity= new Vector();
 
-					const temp_vect= Vector.subtraction(player.position, monstro.position);
-					monstro.shootDirection= temp_vect.getAngle();
+					const temp_vect= Vector.subtraction(player.position, gameObject.position);
+					gameObject.shootDirection= temp_vect.getAngle();
 
-					if(monstro.timers.firerate)
+					if(gameObject.timers.firerate)
 					{	
-						if(monstro.timers.firerate.getDuration() > (monstro.firerate || 250))
+						if(gameObject.timers.firerate.getDuration() > (gameObject.firerate || 250))
 						{
-							monstro.timers.firerate.reset();
+							gameObject.timers.firerate.reset();
 
-							const offsetAng= Math.PI/monstro.spread;
+							const offsetAng= Math.PI/gameObject.spread;
 
-							for(let i= 0; i < monstro.projectilesPerShot; i++)
+							for(let i= 0; i < gameObject.projectilesPerShot; i++)
 							{
-								const proj= new Projectile(gameObjectList, new Vector(monstro.position.x, monstro.position.y), (Math.random() * 5 + 4), (temp_vect.getAngle() + (offsetAng * i)), 10, "enemyProjectile");
+								const proj= new Projectile(gameObjectList, new Vector(gameObject.position.x, gameObject.position.y), (Math.random() * 5 + 4), (temp_vect.getAngle() + (offsetAng * i)), 10, "enemyProjectile");
 							}
-							if(monstro.phase === 2)
-								bulletSplosion(monstro.position, 7);
+							if(gameObject.phase === 2)
+								bulletSplosion(gameObject.position, gameObject.projectilesPerShot);
 						}
 					}
 				}
-				monstro.movementTick= !monstro.movementTick;
+				gameObject.movementTick= !gameObject.movementTick;
 			}
 		}
 	});
@@ -554,13 +567,13 @@ function spawnMrMonstro(player)
 	return monstro;
 };
 
-function bulletSplosion(position= new Vector(0, 0), numberOfProjectiles= 10, size= 10, offset= 0, speed= 7)
+function bulletSplosion(position= new Vector(0, 0), numberOfProjectiles= 10, size= 10, offset= 0, speed= 7, alias= "enemyProjectile", damage= 1)
 {
 	let slice= (Math.PI * 2) / numberOfProjectiles, 
 	angle= offset;
 	for(let i= 0; i < numberOfProjectiles; i++)
 	{
-		new Projectile(gameObjectList, position, speed, angle, size);
+		new Projectile(gameObjectList, position, speed, angle, size, alias, damage);
 		angle= angle + slice;
 	}
 };
@@ -729,7 +742,11 @@ function playerMovementSnappy(player)
 
 	if(inputSystem.space === true)
 	{
-		
+		if(player.timers.superrate.getDuration() >= player.superrate)
+		{
+			bulletSplosion(player.position, 20, 10, 0, 7, "playerProjectile", player.damage * 2);
+			player.timers.superrate.reset();
+		}
 	}
 
 };
@@ -740,7 +757,6 @@ function drawDossHealthBar(gameObject, position= new Vector(0, height - 50), bar
 	context.translate(position.x, position.y);
 	context.beginPath();
 	context.fillStyle= colors[0];
-	context.arc(0, 0, gameObject.collider.radius, 0, Math.PI * 2);
 	context.fillRect(-barWidth / 2, -height / 2, barWidth, 20);
 	context.fillStyle= colors[1];
 
@@ -826,7 +842,7 @@ function spawnExit()
 			if(other.alias === "player")
 			{
 				current.destroy();
-				other.destroy();
+				//other.destroy();
 				eventSystem.dispatchEvent("onLevelExit");
 			}
 		}
@@ -1018,6 +1034,25 @@ function startLevel3(player)
 
 function playerDeathScene()
 {
+	gameObjectList.length= 0;
+	interval.intervalArray= [];
+	timeOut.timeOutArray= [];
+
+	if(lives <= 0)
+	{
+		new UIObject(gameObjectList, new Vector(), gameObject => {
+			const text= "GAME OVER!!!";
+			context.save();
+			context.transform(1, 0, 0, -1, 0, 0)
+			context.fillStyle= "white";
+			context.strokeStyle= "white";
+			context.font = "80px sans";
+			context.fillText(text, -context.measureText(text).width / 2, 0);
+			context.restore();
+		});
+		return;
+	}
+
 	const UI= new UIObject(gameObjectList, new Vector(), gameObject => {
 		let pos= new Vector(-150, 0);
 
@@ -1040,7 +1075,7 @@ function playerDeathScene()
 	});
 	UI.triggerTransition= false;
 	UI.onDestroy= () => {
-		eventSystem.dispatchEvent("onlifeLost");
+		eventSystem.dispatchEvent("onLevelRestart");
 	};
 	timeOut.newTimeOut(() => {
 		lives--;

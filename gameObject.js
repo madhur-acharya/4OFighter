@@ -302,7 +302,7 @@ class Asteroid extends GameObject{
 
 
 class Projectile extends GameObject{
-	constructor(list= [], position= new Vector(0, 0), speed= 10, direction= Math.PI / 2, size= 5, alias= "enemyProjectile")
+	constructor(list= [], position= new Vector(0, 0), speed= 10, direction= Math.PI / 2, size= 5, alias= "enemyProjectile", damage= 1)
 	{
 		const vel= new Vector(0, 0);
 		vel.setMag(speed);
@@ -312,6 +312,7 @@ class Projectile extends GameObject{
 		super.velocity= vel;
 		super.alias= alias;
 		super.layer= "projectile";
+		super.damage= damage;
 		super.renderer= obj => {
 			context.save();
 			context.beginPath();

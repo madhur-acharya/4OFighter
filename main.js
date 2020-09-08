@@ -62,14 +62,13 @@ const getNewFrame= () => {
 
 const setupEvents= () => {
 	window.addEventListener("onBossDeath", () => {
-		const pos= player.position;
-		gameObjectList.length= 0;
-		player= spawnPlayer();
-		player.position= pos;
+		gameObjectList= [player];
 		eventSystem.dispatchEvent("onLevelComplete");
 	});
 
 	window.addEventListener("onLevelComplete", () => {
+		levelList.shift();
+		routeList.shift();
 		timeOut.newTimeOut(spawnExit, 1000);
 	});
 
@@ -77,14 +76,21 @@ const setupEvents= () => {
 
 	window.addEventListener("onIntroComplete", () => {
 		timeOut.newTimeOut(() => {
-			player= spawnPlayer();
-			levelList.pop()(player);
+			if(!player)
+				player= spawnPlayer();
+			else
+				gameObjectList= [player];
+			player.position= new Vector(0, -height / 3);
+			levelList[0](player);
 		}, 1000);
 	});
 
 	window.addEventListener("onOutroComplete", () => {
-		routeList.shift();
 		timeOut.newTimeOut(() => {
+			if(levelList.length <= 0)
+			{
+				eventSystem.dispatchEvent("onGameComplete");
+			}
 			eventSystem.dispatchEvent("onStartNextLevel");
 		}, 1000);
 	});
@@ -94,19 +100,32 @@ const setupEvents= () => {
 		timeOut.newTimeOut(() => drawRouteOutro(routeList[0]), 1000);
 	});
 
-	window.addEventListener("onlifeLost", () => {
+	window.addEventListener("onPlayerDeath", () => {
 		player= spawnPlayer();
+		gameObjectList.length= 0;
+		playerDeathScene();
+	});
+
+	window.addEventListener("onLevelRestart", () => {
+		eventSystem.dispatchEvent("onStartNextLevel");
+	});
+
+	window.addEventListener("onGameComplete", () => {
+		gameObjectList.length= 0;
+		canvas.hidden= true;
+		isPaused= true;
 	});
 };
 
 const Start= () => {
 
-	levelList= [startLevel2, startLevel1, startLevel3];
+	levelList= [startLevel1, startLevel2, startLevel3];
 
 	setupEvents();
 	clearCanvas();
 
 	eventSystem.dispatchEvent("onStartNextLevel");
+	//spawnPlayer();
 
 	getNewFrame();
 
@@ -117,8 +136,6 @@ const Update= () => {
 	interval && interval.update();
 	clearCanvas();
 	
-	//for(i=0; i< 20000000; i++);
-
 	gameObjectList.forEach((itm, indx) => {
 		itm.executeScripts();
 	});

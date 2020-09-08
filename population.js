@@ -13,6 +13,9 @@ eventSystem.createEvent("onStartNextLevel");
 eventSystem.createEvent("onIntroComplete");
 eventSystem.createEvent("onOutroComplete");
 eventSystem.createEvent("onlifeLost");
+eventSystem.createEvent("onPlayerDeath");
+eventSystem.createEvent("onLevelRestart");
+eventSystem.createEvent("onGameComplete");
 
 var isPaused= false,
 	showPausedMessage= true,
