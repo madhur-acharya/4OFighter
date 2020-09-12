@@ -4,12 +4,13 @@ window.addEventListener("load", () => {
 	height= canvas.height= window.innerHeight;
 
 	context= canvas.getContext("2d");
-	console.log("begin animation!");
 	context.translate(width / 2, height / 2);
 	context.transform(1, 0, 0, -1, 0, 0);
 	context.lineWidth= 3;
 	//context.transform(1, 0, 0, -1, 0, canvas.height)  for cartecian cordinate system with origin at bottom left of screen
-	Start();
+
+	setupEvents();
+	clearCanvas();
 });
 
 window.addEventListener("keyup", event => {
@@ -67,12 +68,19 @@ const setupEvents= () => {
 	});
 
 	window.addEventListener("onLevelComplete", () => {
-		levelList.shift();
-		routeList.shift();
 		timeOut.newTimeOut(spawnExit, 1000);
 	});
 
-	window.addEventListener("onStartNextLevel", () => drawRouteIntro(routeList[0]));
+	window.addEventListener("onStartNextLevel", () => {
+		levelList.shift();
+
+		if(levelList.length <= 0)
+		{
+			eventSystem.dispatchEvent("onGameComplete");
+		}
+		else
+			drawRouteIntro(levelList[0].route);
+	});
 
 	window.addEventListener("onIntroComplete", () => {
 		timeOut.newTimeOut(() => {
@@ -80,24 +88,21 @@ const setupEvents= () => {
 				player= spawnPlayer();
 			else
 				gameObjectList= [player];
-			player.position= new Vector(0, -height / 3);
-			levelList[0](player);
+
+			levelList[0].level(player);
 		}, 1000);
 	});
 
 	window.addEventListener("onOutroComplete", () => {
 		timeOut.newTimeOut(() => {
-			if(levelList.length <= 0)
-			{
-				eventSystem.dispatchEvent("onGameComplete");
-			}
 			eventSystem.dispatchEvent("onStartNextLevel");
 		}, 1000);
 	});
 
 	window.addEventListener("onLevelExit", () => {
+		if(player) player.position= new Vector(0, -height / 3);
 		gameObjectList.length= 0;
-		timeOut.newTimeOut(() => drawRouteOutro(routeList[0]), 1000);
+		timeOut.newTimeOut(() => drawRouteOutro(levelList[0].route), 1000);
 	});
 
 	window.addEventListener("onPlayerDeath", () => {
@@ -107,25 +112,40 @@ const setupEvents= () => {
 	});
 
 	window.addEventListener("onLevelRestart", () => {
-		eventSystem.dispatchEvent("onStartNextLevel");
+		drawRouteIntro(levelList[0].route);
 	});
 
 	window.addEventListener("onGameComplete", () => {
 		gameObjectList.length= 0;
 		canvas.hidden= true;
 		isPaused= true;
+		gameComplete= true;
+
+		eventSystem.dispatchEvent("onShowEndGameScene");
+	});
+
+	window.addEventListener("onTutorialComplete", () => {
+		player.position= new Vector(0, 0);
+		eventSystem.dispatchEvent("onStartNextLevel");
+	});
+
+	window.addEventListener("onGameStart", () => {
+		Start();
 	});
 };
 
 const Start= () => {
+	console.log("begin animation!");
 
-	levelList= [startLevel1, startLevel2, startLevel3];
+	levelList= [
+		{level: () => {}, route: "tutorial"},
+		{level : startLevel1, route: "index.html"}, 
+		{level :startLevel2, route: "cats.jpg"}, 
+		{level :startLevel3, route : "download-free-ram.php"}
+	];
 
-	setupEvents();
-	clearCanvas();
-
-	eventSystem.dispatchEvent("onStartNextLevel");
-	//spawnPlayer();
+	tutorialScreen();
+	player= spawnPlayer();
 
 	getNewFrame();
 

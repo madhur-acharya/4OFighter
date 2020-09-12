@@ -3,12 +3,31 @@
 	<title> 40Fighter</title>
 	<meta charset= "UTF-8">
 <style>
-	#my_canvas{border: 0px; padding: 0px; margin: 0px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+	#my_canvas{border: 0px; padding: 0px; margin: 0px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none;}
 	#framerate{position: fixed; top: 0px; left: 0px; z-index: 2; color: white;}
 	#nurdy_stats{position: fixed; top: 0px; left: 50%; z-index: 2; color: white;}
 	#nurdy_stats2{position: fixed; top: 0px; left: 70%; z-index: 2; color: white;}
 	#nurdy_stats3{position: fixed; top: 20px; left: 0px; z-index: 2; color: white;}
-	img{display: none;}
+	img{margin: 20px; }
+	input{width: 95%; border: none; outline: none; }
+	button{padding: 8px 16px;background-color: #f2f2f2;
+		border: 1px solid #f2f2f2;
+		border-radius: 4px;
+		color: #5F6368;
+		cursor: pointer;
+		font-family: arial,sans-serif;
+		font-size: 14px;
+		margin: 11px 4px;
+		min-width: 54px;
+		text-align: center;}
+	.button{display: block; margin: 10px auto; }
+	#container{display: flex;flex-direction: column;justify-content: space-between;align-items: center; position: fixed;top: 50%;left: 50%;transform: translate(-50%, -50%); width: 50%;}
+	#search{width: 100%;}
+	svg{width: 25px; color: #9aa0a6; fill: currentColor;}
+	#input_wrapper{width: 100%; padding: 15px; border-radius: 30px; border: 2px solid #dadada; display: flex; justify-content: flex-end;}
+	#redirect{display: none;}
+	.button{display: flex; justify-content: space-around;}
+	#redirect1, #redirect2{display: none;}
 </style>
 </head>
 <body>	
@@ -18,15 +37,74 @@
 	<pre id= "nurdy_stats3" ></pre>
 	<canvas id= "my_canvas" > whoops!!!</canvas>
 
+	<div id= "container">
+		<img src= "https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png">
+		<div id= "search">
+			<div id= "input_wrapper">
+			<svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path></svg>
+				<input id= "input" type= "text">
+			</div>
+		</div>
+		<div class= "button">
+			<button id= "serachButton"> Google Search</button>
+			<button id= "feelingLucky"> I'm Feeling Lucky</button>
+			<a id= "redirect1"><button> Google Search</button></a>
+			<a id= "redirect2"><button>I'm Feeling Lucky</button></a>
+		</div>
+	</div>
+
+	<script type="text/javascript">
+		let searchQuery= "https://www.google.com/search?q=";
+		let searchKey= "";
+		const serachButton= document.getElementById("serachButton");
+		const feelingLucky= document.getElementById("feelingLucky");
+		const input= document.getElementById("input");
+		const container= document.getElementById("container");
+		const redirect1= document.getElementById("redirect1");
+		const redirect2= document.getElementById("redirect2");
+
+		input.addEventListener("change", event => {
+			searchKey= event.target.value;
+			redirect1.href= searchQuery + searchKey;
+			redirect2.href= searchQuery + searchKey;
+		});
+
+		const handleSearch= () => {
+			if(window.confirm("Request Failed. Status Code: 404 \nError: Server infected by space_virus.exe... Help!!!\n\ninitiate 40Fighter Protocol?"))
+			{
+				container.style.display= "none";
+				my_canvas.style.display= "block";
+				eventSystem && eventSystem.dispatchEvent("onGameStart");
+			};
+		};
+
+		serachButton.addEventListener("click", handleSearch);
+		feelingLucky.addEventListener("click", handleSearch);
+
+		window.addEventListener("onShowEndGameScene", () => {
+			container.style.display= "flex";
+			my_canvas.style.display= "none";
+
+			redirect1.setAttribute("target", "blank");
+			redirect1.style.display= "block";
+
+			redirect2.setAttribute("target", "blank");
+			redirect2.style.display= "block";
+
+			serachButton.style.display= "none";
+			feelingLucky.style.display= "none";
+
+			window.alert("Virus removed...\nServer is back online!");
+		});
+
+	</script>
+
 	<script type= "text/javascript" src= "eventSystem.js"></script>
 	<script type= "text/javascript" src= "input.js"></script>
 	<script type= "text/javascript" src= "population.js"></script>
-
 	<script type= "text/javascript" src= "vector.js"></script>
 	<script type= "text/javascript" src= "gameObject.js"></script>
 	<script type= "text/javascript" src= "utility functions.js"></script>
-
-	<!-- <script type= "text/javascript" src= "particle.js"></script> -->
 	<script type= "text/javascript" src= "scripts.js"></script>
 	<script type= "text/javascript" src= "main.js"></script>
 

@@ -5,7 +5,7 @@ const spawnPlayer= () => {
 	player.health= 10;
 	player.healthCap= 10;
 	player.layer= "projectile";
-	player.damage= 10;
+	player.damage= 1;
 	player.position= new Vector(0, -height / 3);
 	player.renderer= drawSpaceship;
 	player.executables.unshift(playerMovementSnappy);
@@ -771,7 +771,7 @@ function drawDossHealthBar(gameObject, position= new Vector(0, height - 50), bar
 function drawRouteIntro(route= "index.html")
 {
 	const UI= new UIObject(gameObjectList, new Vector(), gameObject => {
-		const text= "https://noogle.com/" + route;
+		const text= "https://google.com/" + route;
 		context.save();
 		context.transform(1, 0, 0, -1, 0, 0)
 		context.fillStyle= "white";
@@ -799,7 +799,7 @@ function drawRouteIntro(route= "index.html")
 function drawRouteOutro(route= "index.html")
 {
 	const UI= new UIObject(gameObjectList, new Vector(), gameObject => {
-		const text= "https://noogle.com/" + route;
+		const text= "https://google.com/" + route;
 		context.save();
 		context.transform(1, 0, 0, -1, 0, 0)
 		context.fillStyle= "white";
@@ -1085,3 +1085,92 @@ function playerDeathScene()
 	}, 2000);
 
 };
+
+function tutorialScreen()
+{
+	const UI= new UIObject(gameObjectList, new Vector(), gameObject => {
+		context.save();
+		context.transform(1, 0, 0, -1, 0, 0);
+		context.fillStyle= "white";
+		context.strokeStyle= "white";
+		context.font = "30px sans";
+
+		context.beginPath();
+		context.translate(-(width / 3), -100);
+		context.fillText("Movement", 0, 0);
+
+		context.beginPath();
+		context.translate(0, 50);
+		context.fillText("W  : Up", 0, 0);
+
+		context.beginPath();
+		context.translate(0, 50);
+		context.fillText("S  : Down", 0, 0);
+
+		context.beginPath();
+		context.translate(0, 50);
+		context.fillText("A  : Left", 0, 0);
+		
+		context.beginPath();
+		context.translate(0, 50);
+		context.fillText("D  : Right", 0, 0);
+
+		context.restore();
+
+		context.save();
+		context.transform(1, 0, 0, -1, 0, 0);
+		context.fillStyle= "white";
+		context.strokeStyle= "white";
+		context.font = "30px sans";
+
+		context.beginPath();
+		context.translate((width / 5), -100);
+		context.fillText("Shoot", 0, 0);
+
+		context.beginPath();
+		context.translate(0, 50);
+		context.fillText("↑  : Up", 0, 0);
+
+		context.beginPath();
+		context.translate(0, 50);
+		context.fillText("↓  : Down", 0, 0);
+
+		context.beginPath();
+		context.translate(0, 50);
+		context.fillText("←  : Left", 0, 0);
+		
+		context.beginPath();
+		context.translate(0, 50);
+		context.fillText("→  : Right", 0, 0);
+
+		context.restore();
+
+		context.save();
+		context.transform(1, 0, 0, -1, 0, 0);
+		context.fillStyle= "white";
+		context.strokeStyle= "white";
+		context.font = "30px sans";
+
+		context.beginPath();
+		context.translate(0, 0);
+		context.fillText("Space : Super", -context.measureText("Space. : Super").width / 2, 0);
+
+		context.beginPath();
+		context.translate(0, -(height / 2) + 100);
+		context.fillText("Exit", -context.measureText("Exit").width / 2, 0);
+
+		context.restore();
+	});
+
+	const exit= spawnExit();
+	exit.collider.onCollision= (current, other) => {
+		if(other.alias === "player")
+		{
+			current.destroy();
+			UI.destroy();
+			other.positon= new Vector(0, 0);
+			eventSystem.dispatchEvent("onTutorialComplete");
+		}
+	}
+}
+
