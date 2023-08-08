@@ -1,16 +1,10 @@
 const GameObject= (function () 
 {
-	let privateProps = new WeakMap();
-
 	class GameObject 
 	{
 		constructor(list= [], positionVector= new Vector(0, 0), velocity= new Vector(0, 0), gravityActive= false, frictionActive= false) 
 		{
-			privateProps.set(this, {
-				position: positionVector,
-				rotation: 0,
-			});
-
+			this.position= positionVector;
 			this.gravityActive= gravityActive;
 			this.gravity= new Vector(0, -0.1);
 			this.velocityCap= 50;
@@ -31,51 +25,12 @@ const GameObject= (function ()
 
 		getProp(prop)
 		{
-			return privateProps.get(this)[prop];
+			return this[prop];
 		}
 
 		setProp(prop, value)
 		{
-			let temp= privateProps.get(this);
-
-			privateProps.set(this, {
-				...temp, 
-				[prop]: value
-			});
-		}
-
-		get position()
-		{
-			return privateProps.get(this).position;
-		}
-
-		set position(vect)
-		{
-			let temp= privateProps.get(this);
-
-			privateProps.set(this, {
-				...temp, 
-				position : vect,
-				rotation: vect.getAngle()
-			});
-		}
-
-		get rotation()
-		{
-			return privateProps.get(this).rotation;
-		}
-
-		set rotation(angle)
-		{
-			const temp= privateProps.get(this);
-			const vect= temp.position;
-			vect.setAngle(angle);
-
-			privateProps.set(this, {
-				...temp, 
-				position : vect,
-				rotation: vect.getAngle()
-			});
+			this[prop]= value;
 		}
 
 		applyVelocity()
@@ -335,7 +290,7 @@ class Projectile extends GameObject{
 			},
 			uncolide: false
 		});
-		super.destroy(5000);
+		super.destroy(2000);
 	}
 }
 
